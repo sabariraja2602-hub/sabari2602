@@ -1,6 +1,12 @@
+// lib/audio_call_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'call_manager.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'dart:html'
+    as html
+    show AudioElement, document; // Only for web audio fix
 
 class AudioCallPage extends StatefulWidget {
   final String currentUserId;
@@ -31,6 +37,9 @@ class _AudioCallPageState extends State<AudioCallPage> {
   bool _isMuted = false;
   bool _isSpeakerOn = false;
 
+  // ✅ Added for improved web audio handling
+  html.AudioElement? _webAudioElement;
+
   @override
   void initState() {
     super.initState();
@@ -49,46 +58,91 @@ class _AudioCallPageState extends State<AudioCallPage> {
       currentUserId: widget.currentUserId,
     );
 
-    // 🎧 Local preview or mic control
-    _callManager.onLocalStream = (stream) {
-      setState(() {
-        if (widget.isVideo) {
-          _localRenderer.srcObject = stream;
-        }
-      });
+    // 🎧 Local preview
+    _callManager.onLocalStream = (MediaStream? stream) async {
+      if (stream == null) return;
+
+      if (_localRenderer.textureId == null) {
+        await _initializeRenderers();
+      }
+
+      if (widget.isVideo) {
+        setState(() => _localRenderer.srcObject = stream);
+      }
     };
 
-    // 🎧 Always play remote audio/video
-    _callManager.onRemoteStream = (stream) {
+    // 🎧 Remote stream
+    _callManager.onRemoteStream = (MediaStream? stream) async {
+      if (stream == null) return;
+
       setState(() {
-        if (widget.isVideo) {
-          _remoteRenderer.srcObject = stream;
-        } else {
-          _remoteRenderer.srcObject = stream; // for audio playback
-        }
+        _remoteRenderer.srcObject = stream;
         _connected = true;
       });
+
+      try {
+        // Enable all audio tracks
+        for (var track in stream.getAudioTracks()) {
+          track.enabled = true;
+        }
+
+        // 🌐 Web audio playback fix — reuse HTML AudioElement
+        if (kIsWeb) {
+          try {
+            if (_webAudioElement == null) {
+              _webAudioElement = html.AudioElement()
+                ..autoplay = true
+                ..controls = false;
+              html.document.body?.append(_webAudioElement!);
+            }
+
+            // Attach stream to audio element
+            // ignore: undefined_prefixed_name
+            _webAudioElement!.srcObject = stream as dynamic;
+            _webAudioElement!.muted = false;
+
+            // Some browsers require a user gesture; attempt play and ignore aborts
+            await _webAudioElement!.play().catchError((e) {
+              debugPrint('⚠ WebAudio play error: $e');
+            });
+
+            debugPrint('✅ remote audio play OK');
+          } catch (e) {
+            debugPrint('⚠ Remote audio playback error (web): $e');
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠ Remote audio handling error: $e');
+      }
     };
 
+    // 🎯 Call ended handler
     _callManager.onCallEnded = () {
       if (!mounted) return;
       Navigator.of(context).popUntil((route) => route.isFirst);
     };
 
+    // Start the call
     _startCall();
   }
 
   Future<void> _startCall() async {
-    await _callManager.init();
+    try {
+      await _callManager.init();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("⚠ Permission error: $e")));
+      Navigator.pop(context);
+      return;
+    }
 
     if (widget.isCaller) {
-      // Caller creates offer
       await _callManager.startCall(
         targetId: widget.targetUserId,
         isVideo: widget.isVideo,
       );
     } else if (widget.offerSignal != null) {
-      // Receiver answers
       await _callManager.answerCall(
         fromId: widget.targetUserId,
         signal: widget.offerSignal!,
@@ -96,59 +150,42 @@ class _AudioCallPageState extends State<AudioCallPage> {
     }
 
     Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _callManager.localStream != null) {
-        setState(() {});
-      }
+      if (mounted && _callManager.localStream != null) setState(() {});
     });
   }
 
   /// 🎙 Mute / Unmute
   void _toggleMute() {
     final stream = _callManager.localStream;
-    if (stream == null) {
-      debugPrint("⚠ Local stream not ready for mute toggle");
-      return;
-    }
+    if (stream == null) return;
 
     for (var track in stream.getAudioTracks()) {
       track.enabled = !track.enabled;
     }
-
     setState(() => _isMuted = !_isMuted);
   }
 
   /// 🔊 Toggle speakerphone
   Future<void> _toggleSpeaker() async {
     try {
-      if (_callManager.localStream == null) {
-        debugPrint('⚠ No active audio stream to toggle speaker.');
-        return;
-      }
-
+      if (kIsWeb) return; // Web has no native speaker control
       await Helper.setSpeakerphoneOn(!_isSpeakerOn);
       setState(() => _isSpeakerOn = !_isSpeakerOn);
-
-      debugPrint(
-        _isSpeakerOn ? '🔊 Speaker turned ON' : '🔈 Speaker turned OFF',
-      );
     } catch (e) {
       debugPrint("⚠ Speaker toggle error: $e");
     }
   }
 
-  /// ➕ Invite another participant to the ongoing call
+  /// ➕ Add participant
   void _inviteParticipant() async {
-    final TextEditingController _userIdController = TextEditingController();
-
+    final controller = TextEditingController();
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Add Participant"),
         content: TextField(
-          controller: _userIdController,
-          decoration: const InputDecoration(
-            labelText: "Enter user ID to invite",
-          ),
+          controller: controller,
+          decoration: const InputDecoration(labelText: "Enter user ID"),
         ),
         actions: [
           TextButton(
@@ -158,7 +195,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
           ElevatedButton(
             child: const Text("Invite"),
             onPressed: () {
-              final newUserId = _userIdController.text.trim();
+              final newUserId = controller.text.trim();
               if (newUserId.isNotEmpty) {
                 _callManager.inviteParticipant(
                   targetId: newUserId,
@@ -184,8 +221,23 @@ class _AudioCallPageState extends State<AudioCallPage> {
   void dispose() {
     _remoteRenderer.dispose();
     _localRenderer.dispose();
-    _callManager.endCall(forceTargetId: widget.targetUserId);
-    _callManager.dispose();
+
+    // ✅ Clean up web audio element
+    if (_webAudioElement != null) {
+      try {
+        _webAudioElement!.pause();
+        _webAudioElement!.remove();
+      } catch (e) {
+        debugPrint("⚠ Error removing web audio element: $e");
+      }
+      _webAudioElement = null;
+    }
+
+    Future.microtask(() async {
+      _callManager.endCall(forceTargetId: widget.targetUserId);
+      _callManager.dispose();
+    });
+
     super.dispose();
   }
 
@@ -200,7 +252,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            /// --- VIDEO OR AUDIO AREA --- ///
+            /// --- MEDIA AREA --- ///
             Expanded(
               child: widget.isVideo
                   ? Stack(
@@ -238,18 +290,26 @@ class _AudioCallPageState extends State<AudioCallPage> {
                         ),
                       ],
                     )
-                  : Center(
-                      child: Icon(
-                        _connected ? Icons.headset : Icons.call,
-                        size: 120,
-                        color: _connected
-                            ? Colors.greenAccent
-                            : Colors.deepPurple,
-                      ),
+                  : Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 1,
+                          height: 1,
+                          child: RTCVideoView(_remoteRenderer),
+                        ),
+                        Icon(
+                          _connected ? Icons.headset : Icons.call,
+                          size: 120,
+                          color: _connected
+                              ? Colors.greenAccent
+                              : Colors.deepPurple,
+                        ),
+                      ],
                     ),
             ),
 
-            /// --- STATUS TEXT --- ///
+            /// --- STATUS --- ///
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
@@ -262,7 +322,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
               ),
             ),
 
-            /// --- CONTROL BUTTONS --- ///
+            /// --- CONTROLS --- ///
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: const BoxDecoration(
@@ -274,65 +334,51 @@ class _AudioCallPageState extends State<AudioCallPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // 🎙 Mute / Unmute
-                  CircleAvatar(
-                    backgroundColor: _isMuted ? Colors.orange : Colors.blue,
-                    radius: 28,
-                    child: IconButton(
-                      icon: Icon(
-                        _isMuted ? Icons.mic_off : Icons.mic,
-                        color: Colors.white,
-                      ),
-                      onPressed: _toggleMute,
-                    ),
+                  _controlButton(
+                    color: _isMuted ? Colors.orange : Colors.blue,
+                    icon: _isMuted ? Icons.mic_off : Icons.mic,
+                    onTap: _toggleMute,
                   ),
-
-                  // 🔊 Speaker on/off
-                  CircleAvatar(
-                    backgroundColor: _isSpeakerOn ? Colors.green : Colors.grey,
-                    radius: 28,
-                    child: IconButton(
-                      icon: Icon(
-                        _isSpeakerOn
-                            ? Icons.volume_up
-                            : Icons.volume_down_outlined,
-                        color: Colors.white,
-                      ),
-                      onPressed: _toggleSpeaker,
-                    ),
+                  _controlButton(
+                    color: _isSpeakerOn ? Colors.green : Colors.grey,
+                    icon: _isSpeakerOn
+                        ? Icons.volume_up
+                        : Icons.volume_down_outlined,
+                    onTap: _toggleSpeaker,
                   ),
-
-                  // ➕ Add participant
-                  CircleAvatar(
-                    backgroundColor: Colors.purple,
-                    radius: 28,
-                    child: IconButton(
-                      icon: const Icon(Icons.person_add, color: Colors.white),
-                      onPressed: _inviteParticipant,
-                    ),
+                  _controlButton(
+                    color: Colors.purple,
+                    icon: Icons.person_add,
+                    onTap: _inviteParticipant,
                   ),
-
-                  // 🚫 End Call
-                  CircleAvatar(
-                    backgroundColor: Colors.red,
-                    radius: 28,
-                    child: IconButton(
-                      icon: const Icon(Icons.call_end, color: Colors.white),
-                      onPressed: () {
-                        _callManager.endCall(
-                          forceTargetId: widget.targetUserId,
-                        );
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
-                      },
-                    ),
+                  _controlButton(
+                    color: Colors.red,
+                    icon: Icons.call_end,
+                    onTap: () {
+                      _callManager.endCall(forceTargetId: widget.targetUserId);
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _controlButton({
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return CircleAvatar(
+      backgroundColor: color,
+      radius: 28,
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onTap,
       ),
     );
   }

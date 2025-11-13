@@ -1,8 +1,9 @@
+//admin_dashboard.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
 
 import 'user_provider.dart';
 import 'sidebar.dart';
@@ -15,6 +16,7 @@ import 'attendance_login.dart';
 import 'event_banner_slider.dart';
 import 'leave_approval.dart';
 import 'adminperformance.dart'; // ✅ for Performance Review
+import 'package:intl/intl.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -41,13 +43,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     fetchEmployeeName();
-    fetchPendingCount("admin"); // ✅ fetch badge count on load
+    _refreshPendingCount(); // ✅ fetch badge count on load
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _fetchLeaveBalance(); // refresh balances when dashboard is revisited
+  }
+
+  // ✅ Helper to get employeeId and refresh count
+  void _refreshPendingCount() {
+    final employeeId = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).employeeId;
+    if (employeeId != null) fetchPendingCount("tl", employeeId);
   }
 
   Future<void> fetchEmployeeName() async {
@@ -129,11 +140,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   /// ✅ Fetch pending leave requests count for admin
-  Future<void> fetchPendingCount(String userRole) async {
+  Future<void> fetchPendingCount(String userRole, String employeeId) async {
     try {
       final response = await http.get(
         Uri.parse(
-          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole",
+          // Pass both role and ID to the backend
+          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole&approverId=$employeeId",
         ),
       );
 
@@ -150,12 +162,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  /// ✅ Employee comments popup (only employee feedback)
+  /// Delete employee comment
+  Future<void> _deleteEmployeeComment(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse("https://sabari2602.onrender.com/review-decision/$id"),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("🗑 Comment deleted successfully")),
+        );
+        Navigator.of(context).pop(); // close current dialog
+        await _showEmployeeComments(); // refresh dialog
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("❌ Failed to delete (${response.statusCode})"),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
+    }
+  }
+
   Future<void> _showEmployeeComments() async {
     try {
       final response = await http.get(
         Uri.parse(
-          "https://sabari2602.onrender.com/review-decision/feedback/employee",
+          "https://sabari2602.onrender.com/review-decision/feedback?positions=employee,intern",
         ),
         headers: {"Accept": "application/json"},
       );
@@ -218,6 +256,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               ],
                             ),
                             isThreeLine: true,
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              tooltip: "Delete Comment",
+                              onPressed: () async {
+                                await _deleteEmployeeComment(item["_id"]);
+                              },
+                            ),
                           ),
                         );
                       },
@@ -247,14 +292,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  /// ✅ Helper: format date nicely
+  /*// ✅ Helper: format date nicely
   String _formatDate(dynamic iso) {
     if (iso == null) return 'N/A';
     try {
-      final dt = DateTime.parse(iso.toString()).toLocal();
-      return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
+      final dt = DateTime.tryParse(iso.toString());
+      if (dt == null) return iso.toString();
+      return "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} "
+          "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
     } catch (_) {
       return iso.toString();
+    }
+  }*/
+  String _formatDate(dynamic dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final parsed = DateTime.tryParse(dateStr.toString());
+      if (parsed == null) return dateStr.toString();
+      return DateFormat('yyyy-MM-dd hh:mm a').format(parsed.toLocal());
+    } catch (e) {
+      return dateStr.toString();
     }
   }
 
@@ -276,7 +333,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
 
     return Sidebar(
-      title: 'AdminDashboard',
+      title: 'TLDashboard',
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,9 +403,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
             );
           }),
           _quickActionButton('Performance Review', () {
+            final userProvider = Provider.of<UserProvider>(
+              context,
+              listen: false,
+            );
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => PerformanceReviewPage()),
+              MaterialPageRoute(
+                builder: (_) => PerformanceReviewPage(
+                  currentUserId: userProvider.employeeId!,
+                ),
+              ),
             );
           }),
           _quickActionButton('Employee Feedback', _showEmployeeComments),
@@ -369,12 +434,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          const LeaveApprovalPage(userRole: "admin"),
+                      builder: (context) {
+                        // Fetch count again when navigating
+                        return const LeaveApprovalPage(userRole: "tl");
+                      },
                     ),
                   ).then((_) {
                     // refresh badge after returning
-                    fetchPendingCount("admin");
+                    _refreshPendingCount();
                   });
                 }),
                 if (_pendingCount > 0)

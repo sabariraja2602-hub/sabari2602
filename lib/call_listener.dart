@@ -1,7 +1,6 @@
-// lib/call_listener.dart
 import 'package:flutter/material.dart';
 import 'call_manager.dart';
-//import 'call_popup.dart';
+import 'call_popup.dart';
 import 'audio_call_page.dart';
 
 class CallListener extends StatefulWidget {
@@ -24,105 +23,86 @@ class _CallListenerState extends State<CallListener> {
   @override
   void initState() {
     super.initState();
+
     _callManager = CallManager(
       serverUrl: 'https://sabari2602.onrender.com',
       currentUserId: widget.currentUserId,
     );
 
+    // 📞 Handle incoming call
     _callManager.onIncomingCall = (fromId, signal) {
-      final isVideo = signal['isVideo'] == true;
+      final isVideo =
+          signal['isVideo'] == true || signal['isVideo']?.toString() == 'true';
       _showIncoming(fromId, isVideo, signal);
     };
 
+    // 📴 Handle call end
     _callManager.onCallEnded = () {
-      if (Navigator.canPop(context)) {
+      if (mounted && Navigator.canPop(context)) {
         Navigator.popUntil(context, (route) => route.isFirst);
       }
     };
 
+    // ⚡ Initialize socket connection
     _callManager.init();
 
+    // ✅ Set up socket-level event listeners AFTER init
+    _callManager.socket.on(
+      'connect_error',
+      (err) => debugPrint('⚠ Socket connect_error: $err'),
+    );
+    _callManager.socket.on(
+      'reconnect',
+      (attempt) => debugPrint('ℹ Socket reconnected: $attempt'),
+    );
+    _callManager.socket.on(
+      'disconnect',
+      (_) => debugPrint('⚠ Socket disconnected'),
+    );
+    _callManager.socket.on('server-heartbeat', (data) {
+      debugPrint('🫀 Server heartbeat: ${data?['ts']}');
+    });
+
+    // 🧩 Also listen to "call-ended" to ensure UI cleans up
     _callManager.socket.on('call-ended', (data) {
-      if (Navigator.canPop(context)) {
+      if (mounted && Navigator.canPop(context)) {
         Navigator.popUntil(context, (route) => route.isFirst);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Caller ended the call')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('📞 Caller ended the call')),
+        );
       }
     });
   }
 
+  /// 🔔 Display the incoming call popup
   void _showIncoming(String fromId, bool isVideo, Map signal) {
     if (!mounted) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => Scaffold(
-          backgroundColor: Colors.black.withOpacity(0.9),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isVideo ? Icons.videocam : Icons.call,
-                  size: 90,
-                  color: Colors.deepPurple,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  '$fromId is calling...',
-                  style: const TextStyle(color: Colors.white, fontSize: 20),
-                ),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // ✅ Reject button
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.call_end),
-                      label: const Text("Reject"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      onPressed: () {
-                        _callManager.rejectCall(fromId);
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
-                      },
-                    ),
-                    const SizedBox(width: 20),
-                    // ✅ Accept button
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.call),
-                      label: const Text("Accept"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context); // close popup
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AudioCallPage(
-                              currentUserId: widget.currentUserId,
-                              targetUserId: fromId,
-                              isCaller: false,
-                              isVideo: isVideo,
-                              offerSignal: signal, // ✅ important
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => IncomingCallPopup(
+        callerId: fromId,
+        isVideo: isVideo,
+        onReject: () {
+          _callManager.rejectCall(fromId);
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
+        onAccept: () {
+          Navigator.pop(context); // close popup
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AudioCallPage(
+                currentUserId: widget.currentUserId,
+                targetUserId: fromId,
+                isCaller: false,
+                isVideo: isVideo,
+                offerSignal: signal,
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

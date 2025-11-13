@@ -44,16 +44,14 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
   Future<void> fetchAllLeaves() async {
     try {
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final role = userProvider.position?.toLowerCase() ?? "";
       final employeeId = userProvider.employeeId ?? "";
 
-      String url;
-      if (role == "admin" || role == "founder") {
-        url = "$apiUrl/all/by-role/$role";
-      } else {
-        url = "$apiUrl/all?employeeId=$employeeId";
+      if (employeeId.isEmpty) {
+        print("❌ Employee ID is missing, cannot fetch leaves.");
+        return;
       }
 
+      String url = "$apiUrl/leave-approvals/$employeeId";
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {

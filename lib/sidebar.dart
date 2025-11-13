@@ -33,7 +33,6 @@ class Sidebar extends StatefulWidget {
 class _SidebarState extends State<Sidebar> {
   String employeeName = "Employee";
   String position = "Position";
-  String? employeeImage; // ✅ new variable
 
   @override
   void initState() {
@@ -50,21 +49,20 @@ class _SidebarState extends State<Sidebar> {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://sabari2602.onrender.com/get-employee-name/$employeeId',
+          'https://sabari2602.onrender.com/apply/get-employee-name/$employeeId',
         ),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
         setState(() {
           employeeName = data['employeeName'] ?? 'Employee';
           position = data['position'] ?? 'Position';
-          employeeImage = data['employeeImage']; // ✅ added
         });
-
+        // ✅ Update provider safely after API call
         WidgetsBinding.instance.addPostFrameCallback((_) {
           userProvider.setPosition(position);
+          userProvider.setDomain(data['domain'] ?? '');
         });
       } else {
         print('❌ Failed to fetch name: ${response.statusCode}');
@@ -111,7 +109,7 @@ class _SidebarState extends State<Sidebar> {
   Widget _buildHeader(BuildContext context) {
     final Map<String, Widget> pageMap = {
       'Dashboard': const EmployeeDashboard(),
-      'AdminDashboard': const AdminDashboard(),
+      'TLDashboard': const AdminDashboard(),
       'SuperAdminDashboard': const SuperAdminDashboard(),
       'Leave Management': const LeaveManagement(),
       'Payroll Management': const EmpPayroll(),
@@ -258,9 +256,8 @@ class _SidebarState extends State<Sidebar> {
 
     // Select Dashboard based on role
     Widget getDashboard() {
-      if (role == "Admin") return const AdminDashboard();
-      if (role == "Founder") return const SuperAdminDashboard();
-      if (role == "HR") return const SuperAdminDashboard();
+      if (role == "TL") return const AdminDashboard();
+      if (role == "Founder" || role == "HR") return const SuperAdminDashboard();
       return const EmployeeDashboard();
     }
 
@@ -278,13 +275,8 @@ class _SidebarState extends State<Sidebar> {
           children: [
             const SizedBox(height: 40),
             ListTile(
-              leading: CircleAvatar(
-                radius: 25,
-                backgroundImage: employeeImage != null
-                    ? NetworkImage(
-                        'https://sabari2602.onrender.com${employeeImage!}',
-                      )
-                    : const AssetImage('assets/profile.png') as ImageProvider,
+              leading: const CircleAvatar(
+                backgroundImage: AssetImage('assets/profile.png'),
               ),
               title: Text(
                 employeeName,
@@ -295,7 +287,6 @@ class _SidebarState extends State<Sidebar> {
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ),
-
             const Divider(),
 
             // 👇 Role-based dashboard
@@ -338,7 +329,7 @@ class _SidebarState extends State<Sidebar> {
               Icons.notifications,
               'Notifications',
               context,
-              (role == "Admin" || role == "Founder")
+              (role == "TL" || role == "Founder" || role == "HR")
                   ? AdminNotificationsPage(empId: userProvider.employeeId ?? '')
                   : EmployeeNotificationsPage(
                       empId: userProvider.employeeId ?? '',

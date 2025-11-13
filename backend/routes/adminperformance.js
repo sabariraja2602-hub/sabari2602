@@ -52,11 +52,13 @@ router.post("/", async (req, res) => {
       review: newReview,
     });
   } catch (err) {
+    // Handle Mongo duplicate error
     if (err.code === 11000) {
       return res.status(400).json({
-        message: "⚠ Review already exists for this employee this month.",
+        message: "Review already exists for this employee this month.",
       });
     }
+
     console.error("Error saving review:", err.message);
     res.status(500).json({ message: "❌ Server error", error: err.message });
   }

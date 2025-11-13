@@ -1,4 +1,3 @@
-//admin_notifcation.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -21,6 +20,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
   bool isLoading = false;
   String? error;
   //int? expandedIndex;
+  // 🔴 red: use expandedKey instead of expandedIndex
   String? expandedKey;
 
   final List<String> months = [
@@ -38,7 +38,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     "December",
   ];
 
-  List<Map<String, dynamic>> messages = [];
+  List<Map<String, dynamic>> message = [];
   List<Map<String, dynamic>> performance = [];
   //List<Map<String, dynamic>> meetings = [];
   //List<Map<String, dynamic>> events = [];
@@ -55,70 +55,15 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     setState(() {
       isLoading = true;
       error = null;
-      messages.clear();
+      message.clear();
       performance.clear();
       // meetings.clear();
-      // events.clear();
+      //events.clear();
       holidays.clear();
       //expandedIndex = null;
+      // 🔴 red: reset expandedKey on refresh
       expandedKey = null;
     });
-    /*
-    final uri = Uri.parse("http://localhost:5000/notifications/$selectedMonth");
-    if (widget.empId != "ALL") {
-      uri.replace(
-        path: "http://localhost:5000/notifications/$selectedMonth/${widget.empId}",
-      );
-    }
-    try {
-      final resp = await http.get(uri);
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(resp.body);
-        if (decoded is List) {
-          setState(() {
-            message = decoded
-                .where((n) => (n['category'] as String).toLowerCase() == 'sms')
-                .cast<Map<String, dynamic>>()
-                .toList();
-
-            performance = decoded
-                .where(
-                  (n) =>
-                      (n['category'] as String).toLowerCase() == 'performance',
-                )
-                .cast<Map<String, dynamic>>()
-                .toList();
-            /*    meetings = decoded
-                .where((n) =>
-                    (n['category'] as String).toLowerCase() == 'meeting')
-                .cast<Map<String, dynamic>>()
-                .toList();
-            events = decoded
-                .where((n) =>
-                    (n['category'] as String).toLowerCase() == 'event')
-                .cast<Map<String, dynamic>>()
-                .toList(); 
-       */
-            holidays = decoded
-                .where(
-                  (n) => (n['category'] as String).toLowerCase() == 'holiday',
-                )
-                .cast<Map<String, dynamic>>()
-                .toList();
-          });
-        } else {
-          setState(() => error = "Invalid data from server");
-        }
-      } else {
-        setState(() => error = "Failed: ${resp.statusCode}");
-      }
-    } catch (e) {
-      setState(() => error = "Error: $e");
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-*/
 
     try {
       // 🔹 Call both APIs parallel
@@ -138,7 +83,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
   /// 🔹 Fetch SMS Notifications
   Future<void> fetchSmsNotifications() async {
     final uri = Uri.parse(
-      "https://sabari2602.onrender.com/notifications/employee/${widget.empId}?month=$selectedMonth&category=messages",
+      "https://sabari2602.onrender.com/notifications/employee/${widget.empId}?month=$selectedMonth&category=message",
     );
     final resp = await http.get(uri);
 
@@ -146,15 +91,15 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
       final decoded = jsonDecode(resp.body);
       if (decoded is List) {
         setState(() {
-          messages = decoded.cast<Map<String, dynamic>>();
+          message = decoded.cast<Map<String, dynamic>>();
         });
       }
     } else if (resp.statusCode == 404) {
       // 🔹 No SMS → empty list
-      setState(() => messages = []);
+      setState(() => message = []);
     } else {
       throw Exception(
-        "Failed to load SMS notifications. Code: ${resp.statusCode}",
+        "Failed to load Message notifications. Code: ${resp.statusCode}",
       );
     }
   }
@@ -162,9 +107,9 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
   /// 🔹 Fetch Performance Notifications
   Future<void> fetchPerformanceNotifications() async {
     final uri = Uri.parse(
-      "https://sabari2602.onrender.com/notifications/performance/employee/$selectedMonth/${widget.empId}",
+      //"http://localhost:5000/api/notifications/$selectedMonth/${widget.empId}");
+      "https://sabari2602.onrender.com/notifications/performance/admin/$selectedMonth/${widget.empId}",
     );
-
     final resp = await http.get(uri);
 
     if (resp.statusCode == 200) {
@@ -178,14 +123,12 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
               )
               .cast<Map<String, dynamic>>()
               .toList();
-          //     holidays =
-          // decoded
-          //     .where(
-          //       (n) =>
-          //           (n['category'] as String).toLowerCase() == 'holiday',
-          //     )
-          //     .cast<Map<String, dynamic>>()
-          //     .toList();
+          holidays = decoded
+              .where(
+                (n) => (n['category'] as String).toLowerCase() == 'holiday',
+              )
+              .cast<Map<String, dynamic>>()
+              .toList();
         });
       }
     } else if (resp.statusCode == 404) {
@@ -202,12 +145,10 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     final uri = Uri.parse(
       "https://sabari2602.onrender.com/notifications/holiday/admin/$selectedMonth",
     );
-
     final resp = await http.get(uri);
 
     if (resp.statusCode == 200) {
       final decoded = jsonDecode(resp.body);
-
       if (decoded is List) {
         setState(() {
           holidays = decoded.cast<Map<String, dynamic>>();
@@ -215,7 +156,6 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
       }
     } else if (resp.statusCode == 404) {
       // 🔹 No Holiday → empty list
-
       setState(() => holidays = []);
     } else {
       throw Exception(
@@ -262,7 +202,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                     )
                   else ...[
                     notificationCategory("Performance", performance),
-                    notificationCategory("messages", messages),
+                    notificationCategory("Message", message),
                     //  notificationCategory("Meetings", meetings),
                     // notificationCategory("Company Events", events),
                     notificationCategory("Holidays", holidays),
@@ -331,7 +271,6 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
           )
         else
           ...list.asMap().entries.map((entry) {
-            //final idx = entry.key;
             final index = entry.key;
             //final msg = entry.value['message'] as String;
             //return notificationCard(msg, idx, title);
@@ -348,7 +287,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     int index,
     String categoryParam,
   ) {
-    //final isExpanded = expandedIndex == index;
+    // final isExpanded = expandedIndex == index;
     final cardKey = "$categoryParam-$index"; // 🔴 unique key per notification
     final isExpanded = expandedKey == cardKey;
     final message = notif['message'] as String;
@@ -356,15 +295,16 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     final senderName =
         notif['senderName'] ?? 'Unknown'; // 🔴 red: added senderName
     final senderId = notif['senderId'] ?? ''; // 🔴 red: added senderId
-    if (category.toLowerCase() == "messages") {
+    if (category.toLowerCase() == "message") {
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
         child: Material(
           color: Colors.white,
           elevation: 2,
           child: InkWell(
-            onTap: () =>
-                setState(() => expandedKey = isExpanded ? null : cardKey),
+            onTap:
+                //() => setState(() => expandedIndex = isExpanded ? null : index),
+                () => setState(() => expandedKey = isExpanded ? null : cardKey),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -382,35 +322,32 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                             color: Colors.black87,
                           ),
                         ),
-                        if (isExpanded) ...[
-                          const SizedBox(height: 4),
-                          // 🔹 Second line -> Message
+                        const SizedBox(height: 4),
+                        // 🔹 Second line -> Message
+                        Text(
+                          message,
+
+                          //message,
+                          //"$message\nFrom: $senderName ($senderId)", // 🔴 red: include sender info
+                          style: const TextStyle(fontSize: 14),
+                          maxLines: isExpanded ? null : 1,
+                          overflow: isExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                        ),
+                        if (isExpanded) const SizedBox(height: 8),
+                        if (isExpanded)
                           Text(
-                            message,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
                             "Click again to collapse",
+                            //"From: $senderName ($senderId)", // 🔴 red: separate sender info
                             style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
-                        ] else ...[
-                          const SizedBox(height: 4),
-                          const Text(
-                            "Click to view message...",
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
-                  // if (category.toLowerCase() == "sms")
+                  // ✅ Only show "View" for SMS in SMS list
+                  // if ((category == "sms" && sms.contains(notif)) ||
+                  //   (category == "performance" && performance.contains(notif)))
                   //   TextButton(
                   //     onPressed: () {
                   //       Navigator.push(
@@ -452,7 +389,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
       );
     }
 
-    //Performance
+    // Performance
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -461,8 +398,9 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () =>
-              setState(() => expandedKey = isExpanded ? null : cardKey),
+          onTap:
+              //() => setState(() => expandedIndex = isExpanded ? null : index),
+              () => setState(() => expandedKey = isExpanded ? null : cardKey),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -530,3 +468,5 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     );
   }
 }
+
+//admin_notification.dart

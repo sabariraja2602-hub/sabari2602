@@ -3,10 +3,16 @@ const router = express.Router();
 const ReviewDecision = require("../models/performanceDecision");
 const Reports = require("../models/reviewmodel");
 
-// ✅ Save new decision AND update review status
+// Normalize helper
+function normalizePosition(pos) {
+  if (!pos) return "";
+  return pos.toString().trim().toLowerCase();
+}
+
+// ✅ Save new decision AND update review status (normalize position)
 router.post("/", async (req, res) => {
   try {
-    const {
+    let {
       employeeId,
       employeeName,
       position,
@@ -19,6 +25,9 @@ router.post("/", async (req, res) => {
     if (!employeeId || !employeeName || !position || !decision || !reviewId) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
+    // Normalize position to lower case
+    position = normalizePosition(position);
 
     // Ensure sendTo is always an array
     const targets = Array.isArray(sendTo) ? sendTo : [sendTo];
@@ -59,13 +68,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ✅ Get only employee feedback (filter by position = employee)
+// Backwards-compatible route: /feedback/employee (kept)
 router.get("/feedback/employee", async (req, res) => {
   try {
-    const decisions = await ReviewDecision.find({
-  position: { $regex: /^employee$/i },
-})
-
+    const decisions = await ReviewDecision.find({ position: "employee" })
       .sort({ createdAt: -1 });
     res.json(decisions);
   } catch (error) {
@@ -74,7 +80,35 @@ router.get("/feedback/employee", async (req, res) => {
   }
 });
 
-// ✅ Get decisions for specific employee
+// ✅ New flexible feedback route: /feedback?positions=employee,intern
+router.get("/feedback", async (req, res) => {
+  try {
+    // positions can be comma separated, e.g. ?positions=employee,intern
+    let { positions } = req.query;
+
+    let positionArray;
+    if (!positions || positions === "") {
+      // default to employee + intern
+      positionArray = ["employee", "intern"];
+    } else {
+      positionArray = positions.toString().split(",").map(p => normalizePosition(p));
+    }
+
+    // remove empty strings and dedupe
+    positionArray = Array.from(new Set(positionArray.filter(Boolean)));
+
+    const decisions = await ReviewDecision.find({
+      position: { $in: positionArray }
+    }).sort({ createdAt: -1 });
+
+    res.json(decisions);
+  } catch (error) {
+    console.error("Error fetching feedback:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ✅ Get decisions for specific employee (unchanged)
 router.get("/:employeeId", async (req, res) => {
   try {
     const { employeeId } = req.params;

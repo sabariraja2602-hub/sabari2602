@@ -1,3 +1,5 @@
+//super admindashboard.dart
+
 // lib/super_admin_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +12,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
-//import 'package:zeai_project/superadmin_notification.dart';
 
 import 'user_provider.dart';
 import 'sidebar.dart';
@@ -22,8 +23,10 @@ import 'admin_notification.dart';
 import 'attendance_login.dart';
 import 'event_banner_slider.dart';
 import 'leave_approval.dart';
-import 'superadmin_performance.dart'; // for Performance Review
+//import 'adminperformance.dart'; // for Performance Review
+import 'superadmin_performance.dart'; // ✅ for SuperadminPerformancePageReview
 import 'employee_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SuperAdminDashboard extends StatefulWidget {
   const SuperAdminDashboard({super.key});
@@ -69,7 +72,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   /// Fetch employee name from backend.
-  /// Attempts the common `/api/employees/:id` route first, then falls back to `/get-employee-name/:id`.
+  /// Attempts the common /api/employees/:id route first, then falls back to /get-employee-name/:id.
   /// Fetch employee name from backend (single endpoint now).
   Future<void> fetchEmployeeName() async {
     final employeeId = Provider.of<UserProvider>(
@@ -154,11 +157,12 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   /// Fetch pending count for a role (used by FutureBuilder)
-  Future<int> fetchPendingCount(String userRole) async {
+  Future<int> fetchPendingCount(String userRole, String employeeId) async {
     try {
       final response = await http.get(
         Uri.parse(
-          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole",
+          // Pass both role and ID to the backend
+          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole&approverId=$employeeId",
         ),
       );
 
@@ -184,7 +188,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("🗑️ Comment deleted successfully")),
+          const SnackBar(content: Text("🗑 Comment deleted successfully")),
         );
         Navigator.of(context).pop(); // close current dialog
         await _showEmployeeComments(); // refresh dialog
@@ -202,7 +206,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     }
   }
 
-  /// Employee comments popup (with delete option)
+  /// Employee comments popup
   Future<void> _showEmployeeComments() async {
     try {
       final response = await http.get(
@@ -720,19 +724,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                     final createdAt = r['createdAt'] != null
                         ? _formatDate(r['createdAt'])
                         : '';
-
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       child: ListTile(
                         title: Text(
-                          '${r['full_name']} — ${r['field'] ?? 'Unknown'}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          '${r['full_name'] ?? 'Unknown'} — ${r['field']}',
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Employee ID: ${r['employeeId']}'),
-                            Text('Field: ${r['field']}'),
                             Text('Old: ${r['oldValue'] ?? ''}'),
                             Text('New: ${r['newValue'] ?? ''}'),
                             Text('Requested by: ${r['requestedBy'] ?? ''}'),
@@ -754,7 +754,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                                 Icons.check,
                                 color: Colors.green,
                               ),
-                              tooltip: "Approve",
                               onPressed: () async {
                                 Navigator.of(context).pop();
                                 await _approveRequest(r['_id']);
@@ -763,7 +762,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, color: Colors.red),
-                              tooltip: "Reject",
                               onPressed: () async {
                                 Navigator.of(context).pop();
                                 await _declineRequest(r['_id']);
@@ -792,7 +790,6 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     if (_error != null) {
       return Scaffold(
         body: Center(
@@ -835,12 +832,35 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final role =
+        Provider.of<UserProvider>(
+          context,
+          listen: false,
+        ).position?.toLowerCase() ??
+        "founder";
+    // final approverRole = (role == "hr") ? "hr" : "founder";
+    final approverRole = (role == "superadmin")
+        ? "superadmin"
+        : (role == "hr")
+        ? "hr"
+        : (role == "founder")
+        ? "founder"
+        : (role == "tl")
+        ? "tl"
+        : "employee";
+
     return Center(
       child: Wrap(
         spacing: 90,
         runSpacing: 20,
         alignment: WrapAlignment.center,
         children: [
+          _quickActionButton('Apply Leave', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ApplyLeave()),
+            );
+          }),
           _quickActionButton('Download Payslip', () {
             Navigator.push(
               context,
@@ -869,19 +889,33 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
             );
           }),
           _quickActionButton('Performance Review', () {
+            final userProvider = Provider.of<UserProvider>(
+              context,
+              listen: false,
+            );
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => SuperadminPerformancePage()),
+              MaterialPageRoute(
+                builder: (_) => SuperadminPerformancePage(
+                  currentUserId: userProvider.employeeId!,
+                ),
+              ),
             );
           }),
           _quickActionButton('Employee Feedback', _showEmployeeComments),
           _quickActionButton('Request', _showChangeRequests),
-          _quickActionButton('Company Events', () {
+          _quickActionButton('Company Events', () async {
+            final prefs = await SharedPreferences.getInstance();
+            final position = prefs.getString('position') ?? '';
+
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const CompanyEventsScreen()),
+              MaterialPageRoute(
+                builder: (_) => CompanyEventsScreen(isHR: position == 'HR'),
+              ),
             );
           }),
+
           _quickActionButton('Add Employee', _showAddEmployeeDialog),
           _quickActionButton('Employee List', () {
             Navigator.push(
@@ -889,9 +923,15 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
               MaterialPageRoute(builder: (_) => const EmployeeListScreen()),
             );
           }),
+
           FutureBuilder<int>(
-            future: fetchPendingCount("admin"),
+            future: fetchPendingCount(
+              approverRole,
+              Provider.of<UserProvider>(context, listen: false).employeeId ??
+                  '',
+            ),
             builder: (context, snapshot) {
+              // Re-fetch on state change if needed, or just rely on future builder
               final count = snapshot.data ?? 0;
               return Stack(
                 clipBehavior: Clip.none,
@@ -901,7 +941,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            const LeaveApprovalPage(userRole: "admin"),
+                            LeaveApprovalPage(userRole: approverRole),
                       ),
                     );
                   }),

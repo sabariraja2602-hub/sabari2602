@@ -94,7 +94,7 @@ class _MsgPageState extends State<MsgPage> {
           headers: {"Content-Type": "application/json"},
           body: json.encode({
             "month": month,
-            "category": "sms", // 🔴 temporary fixed category
+            "category": "message", // 🔴 temporary fixed category
             "message": _msgController.text,
             "empId": widget.employeeId, // 🔴 target employee ID
             "senderName": senderName, // 🔹 sender Name  // 👈 extra field
@@ -151,7 +151,7 @@ class _MsgPageState extends State<MsgPage> {
                         (employeeData?['employeeImage'] != null &&
                             employeeData!['employeeImage'].isNotEmpty)
                         ? NetworkImage(
-                            "https://sabari2602.onrender.com/uploads/${employeeData!['employeeImage']}",
+                            "https://sabari2602.onrender.com${employeeData!['employeeImage']}",
                           )
                         : const AssetImage("assets/profile.png")
                               as ImageProvider,

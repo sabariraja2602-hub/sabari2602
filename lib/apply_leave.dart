@@ -24,6 +24,10 @@ class _ApplyLeaveState extends State<ApplyLeave> {
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
+  List<Map<String, dynamic>> _approvers = [];
+  String? _selectedApproverId;
+  String? _approverError; // ✅ To hold a specific error message
+
   final DateFormat dateFormatter = DateFormat(
     'dd-MM-yyyy',
   ); // ✅ dd/MM/yyyy format
@@ -40,6 +44,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
 
     if (employeeId != null) {
       fetchEmployeeName(employeeId);
+      _fetchApprovers(employeeId);
     }
 
     // Pre-fill when editing
@@ -81,6 +86,44 @@ class _ApplyLeaveState extends State<ApplyLeave> {
     }
   }
 
+  Future<void> _fetchApprovers(String employeeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://sabari2602.onrender.com/apply/approvers/$employeeId',
+        ),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          _approvers = data
+              .map(
+                (item) => {
+                  'employeeId': item['employeeId'],
+                  'employeeName': item['employeeName'],
+                },
+              )
+              .toList();
+          // If we get exactly one approver (the domain TL), auto-select them.
+          if (_approvers.isEmpty) {
+            _approverError =
+                'No approver found for your domain. Please contact HR.';
+          } else if (_approvers.length == 1) {
+            _selectedApproverId = _approvers.first['employeeId'];
+          } else {
+            _approverError = null; // Clear any previous error
+          }
+        });
+      } else {
+        setState(() {
+          _approverError = 'Failed to load approvers. Please try again.';
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching approvers: $e');
+    }
+  }
+
   Future<void> _selectDate(BuildContext context, bool isFrom) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -107,6 +150,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
 
     if (selectedLeaveType == null ||
         reasonController.text.trim().isEmpty ||
+        _selectedApproverId == null ||
         employeeId == null ||
         employeeName == null ||
         position == null) {
@@ -146,7 +190,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
       "employeeName": employeeName,
       "position": position,
       "leaveType": selectedLeaveType,
-      "approver": "Hari Bhaskar",
+      "approverId": _selectedApproverId,
       "fromDate": fromDate.toIso8601String(), // ✅ ISO string
       "toDate": toDate.toIso8601String(), // ✅ ISO string
       "reason": reasonController.text.trim(),
@@ -273,20 +317,47 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Approver', style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 5),
-                      TextField(
-                        readOnly: true,
+                    children: [
+                      const Text(
+                        'Approver',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 5),
+                      DropdownButtonFormField<String>(
+                        value: _selectedApproverId,
+                        items: _approvers.map((approver) {
+                          return DropdownMenuItem<String>(
+                            value: approver['employeeId'],
+                            child: Text(approver['employeeName']),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedApproverId = value;
+                          });
+                        },
                         decoration: InputDecoration(
+                          hintText: 'Select Approver',
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(8)),
                           ),
-                          hintText: 'Hari Bhaskar',
                         ),
+                        isExpanded: true,
                       ),
+                      // ✅ Display the approver error message if it exists
+                      if (_approverError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            _approverError!,
+                            style: TextStyle(
+                              color: Colors.yellow[700],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -377,7 +448,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton(
-                  onPressed: _submitLeave,
+                  // ✅ Disable button if there's an approver error
+                  onPressed: _approverError != null ? null : _submitLeave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 240, 239, 243),
                   ),

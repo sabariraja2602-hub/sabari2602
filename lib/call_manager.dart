@@ -1,11 +1,12 @@
 // lib/call_manager.dart
-import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 typedef IncomingCallCallback = void Function(String fromId, Map signal);
-typedef RemoteStreamCallback = void Function(MediaStream stream);
-typedef LocalStreamCallback = void Function(MediaStream stream);
+typedef RemoteStreamCallback = void Function(MediaStream? stream);
+typedef LocalStreamCallback = void Function(MediaStream? stream);
 
 class CallManager {
   late IO.Socket socket;
@@ -22,7 +23,7 @@ class CallManager {
   VoidCallback? onCallEnded;
 
   String? _currentTarget;
-  String? currentRoomId; // ✅ For group calls
+  String? currentRoomId;
 
   CallManager({
     required this.serverUrl,
@@ -83,62 +84,134 @@ class CallManager {
 
     // ✅ ICE candidates
     socket.on('ice-candidate', (data) async {
-      try {
-        final cand = Map<String, dynamic>.from(data['candidate'] ?? {});
-        final candidate = RTCIceCandidate(
-          cand['candidate'] as String?,
-          cand['sdpMid'] as String?,
-          cand['sdpMLineIndex'] as int?,
-        );
-        if (_pc != null) await _pc!.addCandidate(candidate);
-      } catch (e) {
-        debugPrint('⚠ ice-candidate parse error: $e');
-      }
-    });
+  try {
+    if (data == null) return;
+
+    Map<String, dynamic>? candMap;
+
+    if (data is Map && data['candidate'] != null) {
+      candMap = Map<String, dynamic>.from(data['candidate']);
+    } else if (data is Map) {
+      // fallback: maybe data itself is the candidate
+      candMap = Map<String, dynamic>.from(data);
+    }
+
+    if (candMap == null) return;
+
+    final candidateStr = candMap['candidate'] as String?;
+    final sdpMid = candMap['sdpMid'] as String?;
+    final sdpMLineIndex = candMap['sdpMLineIndex'] is int
+        ? candMap['sdpMLineIndex'] as int
+        : int.tryParse(candMap['sdpMLineIndex']?.toString() ?? '');
+
+    if (candidateStr == null) return;
+
+    final candidate = RTCIceCandidate(candidateStr, sdpMid, sdpMLineIndex);
+    if (_pc != null) await _pc!.addCandidate(candidate);
+  } catch (e) {
+    debugPrint('⚠ ice-candidate parse error: $e');
+  }
+});
+
 
     socket.onDisconnect((_) {
       debugPrint('⚠ Socket disconnected');
     });
   }
 
-  /// ✅ Create Peer Connection
-  Future<RTCPeerConnection> _createPeerConnection(
-    bool isVideo,
-    String targetId,
-  ) async {
-    final configuration = <String, dynamic>{
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'}
-      ]
-    };
+  // ✅ Create Peer Connection
+Future<RTCPeerConnection> _createPeerConnection(
+  bool isVideo,
+  String targetId,
+) async {
+  // ✅ ICE configuration (STUN + TURN)
+  final configuration = <String, dynamic>{
+    'iceServers': [
+      // 🌐 Google STUN servers
+      {'urls': 'stun:stun.l.google.com:19302'},
+      {'urls': 'stun:stun1.l.google.com:19302'},
 
-    final pc = await createPeerConnection(configuration);
+      // 🔄 Public TURN server (for cross-network / laptop-to-laptop)
+      {
+        'urls': [
+          'turn:openrelay.metered.ca:80?transport=udp',
+          'turn:openrelay.metered.ca:80?transport=tcp',
+          'turn:openrelay.metered.ca:443?transport=tcp',
+        ],
+        'username': 'openrelayproject',
+        'credential': 'openrelayproject',
+      },
 
-    // Handle ICE candidates
-    pc.onIceCandidate = (RTCIceCandidate c) {
-      if (c.candidate != null) {
-        socket.emit('ice-candidate', {
-          'to': targetId,
-          'candidate': {
-            'candidate': c.candidate,
-            'sdpMid': c.sdpMid,
-            'sdpMLineIndex': c.sdpMLineIndex,
-          }
-        });
-      }
-    };
+      // 🧱 Example for production (replace with your own TURN later)
+      // {
+      //   'urls': 'turn:your.turn.server:3478',
+      //   'username': 'yourUsername',
+      //   'credential': 'yourPassword',
+      // },
+    ],
+    'iceTransportPolicy': 'all', // allow all ICE candidates (relay + host + srflx)
+  };
 
-    // Handle remote tracks
-    pc.onTrack = (RTCTrackEvent event) {
+  // ✅ Create Peer Connection
+  final pc = await createPeerConnection(configuration);
+
+  // 🔍 Connection State Debug Logs
+  pc.onConnectionState = (RTCPeerConnectionState state) {
+    debugPrint('🔗 PeerConnection state: $state');
+  };
+  pc.onIceConnectionState = (RTCIceConnectionState state) {
+    debugPrint('🧭 ICE connection state: $state');
+  };
+  pc.onSignalingState = (RTCSignalingState state) {
+    debugPrint('📡 Signaling state: $state');
+  };
+
+  // ✅ When local ICE candidate is found, send it via socket
+  pc.onIceCandidate = (RTCIceCandidate candidate) {
+    if (candidate.candidate != null) {
+      socket.emit("ice-candidate", {
+        "to": targetId,
+        "from": currentUserId,
+        "candidate": {
+          "candidate": candidate.candidate,
+          "sdpMid": candidate.sdpMid,
+          "sdpMLineIndex": candidate.sdpMLineIndex,
+        },
+      });
+    }
+  };
+
+  // ✅ Handle remote media tracks
+  pc.onTrack = (RTCTrackEvent event) async {
+    try {
+      debugPrint(
+        '🎥 onTrack: kind=${event.track.kind}, id=${event.track.id}, streams=${event.streams.length}',
+      );
+
+      MediaStream? streamToUse;
+
       if (event.streams.isNotEmpty) {
-        final stream = event.streams.first;
-        debugPrint('🎥 Remote track added (${event.track.kind})');
-        onRemoteStream?.call(stream);
+        streamToUse = event.streams.first;
+      } else {
+        debugPrint('ℹ onTrack: no streams, creating MediaStream from track');
+        streamToUse = await createLocalMediaStream("remoteStream");
+        streamToUse.addTrack(event.track);
       }
-    };
 
-    return pc;
-  }
+      for (final t in streamToUse.getAudioTracks()) {
+        debugPrint('🎚 remote audio track ${t.id} enabled=${t.enabled}');
+        t.enabled = true;
+      }
+
+      onRemoteStream?.call(streamToUse);
+    } catch (e) {
+      debugPrint('⚠ onTrack error: $e');
+    }
+  };
+
+  return pc;
+}
+
 
   /// ✅ Create room (for group call)
   void createRoom(String targetId) {
@@ -151,7 +224,7 @@ class CallManager {
     debugPrint("🏠 Room created: $currentRoomId by $currentUserId");
   }
 
-  /// ✅ Invite another participant into an existing room
+  /// ✅ Invite another participant
   void inviteParticipant({
     required String targetId,
     required String? roomId,
@@ -176,11 +249,22 @@ class CallManager {
     required String targetId,
     required bool isVideo,
   }) async {
+    _currentTarget = targetId;
     _localStream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': isVideo,
+      'audio': {
+        'echoCancellation': true,
+        'noiseSuppression': true,
+        'autoGainControl': true,
+      },
+      'video': isVideo ? {'facingMode': 'user'} : false,
     });
-    onLocalStream?.call(_localStream!);
+
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await Helper.setSpeakerphoneOn(true);
+    }
+
+    debugPrint('🔈 Local audio tracks: ${_localStream?.getAudioTracks().length}');
+    onLocalStream?.call(_localStream);
 
     _pc = await _createPeerConnection(isVideo, targetId);
 
@@ -190,7 +274,7 @@ class CallManager {
       }
     }
 
-    // ✅ Create room for group call
+    // ✅ Create room
     createRoom(targetId);
 
     final offer = await _pc!.createOffer();
@@ -217,11 +301,19 @@ class CallManager {
     final isVideo = signal['isVideo'] == true;
 
     _localStream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': isVideo,
+      'audio': {
+        'echoCancellation': true,
+        'noiseSuppression': true,
+        'autoGainControl': true,
+      },
+      'video': isVideo ? {'facingMode': 'user'} : false,
     });
 
-    onLocalStream?.call(_localStream!);
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await Helper.setSpeakerphoneOn(true);
+    }
+
+    onLocalStream?.call(_localStream);
 
     _pc = await _createPeerConnection(isVideo, fromId);
 
@@ -231,7 +323,7 @@ class CallManager {
       }
     }
 
-    // ✅ Save room ID if provided
+    // ✅ Use existing room ID if sent
     if (signal['roomId'] != null) {
       currentRoomId = signal['roomId'];
       debugPrint("📦 Joined existing room: $currentRoomId");
@@ -271,7 +363,7 @@ class CallManager {
     _cleanupPeer();
   }
 
-  /// ✅ Reject incoming call
+  /// ✅ Reject call
   void rejectCall(String toId) {
     try {
       socket.emit('reject-call', {'to': toId, 'from': currentUserId});
@@ -282,7 +374,7 @@ class CallManager {
     _cleanupPeer();
   }
 
-  /// ✅ Cleanup peer connection and streams
+  /// ✅ Cleanup
   void _cleanupPeer() {
     try {
       _pc?.close();

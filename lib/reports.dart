@@ -72,7 +72,7 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
 
   List<PerformanceReview> _reviews = [];
   bool _loadingList = true;
-  bool _dataFetched = false;
+  //bool _dataFetched = false;
 
   int workProgress = 0;
   int leaveUsed = 0;
@@ -82,17 +82,9 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   @override
   void initState() {
     super.initState();
-    if (!_dataFetched) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final empId = userProvider.employeeId ?? '';
-
-      if (empId.isNotEmpty) {
-        fetchPerformanceReviews(empId);
-        fetchWorkProgress(empId);
-        fetchLeaveStats(empId);
-        _dataFetched = true;
-      }
-    }
+    fetchPerformanceReviews();
+    fetchWorkProgress();
+    fetchLeaveStatus();
   }
 
   // ✅ Fetch performance list
@@ -162,25 +154,17 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     required PerformanceReview review,
   }) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final reviewedBy = review.reviewedBy.trim().toLowerCase();
-
-    // Decide recipients based on who reviewed
-    List<String> targets = [];
-    if (reviewedBy == "admin") {
-      targets = ["Admin", "Super Admin"];
-    } else if (reviewedBy == "super admin") {
-      targets = ["Super Admin"];
-    } else {
-      targets = [review.reviewedBy]; // fallback
-    }
 
     final body = json.encode({
       "employeeId": userProvider.employeeId,
       "employeeName": userProvider.employeeName, // ✅ logged-in user name
-      "position": userProvider.position ?? "employee", // ✅ use login role
+      "position": (userProvider.position ?? "employee")
+          .toString()
+          .trim()
+          .toLowerCase(), // ✅ use login role
       "decision": decision,
       "comment": comment,
-      "sendTo": targets,
+      "sendTo": ["hr"],
       "reviewId": review.id,
     });
 
@@ -370,8 +354,13 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
   }
 
   // ---------------- Fetch stats ----------------
-  Future<void> fetchWorkProgress(String empId) async {
-    var url = Uri.parse('$apiBase/todo_planner/todo/progress/$empId');
+  // ---------------- Fetch stats ----------------
+  Future<void> fetchWorkProgress() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final employeeId = userProvider.employeeId ?? '';
+    if (employeeId.isEmpty) return;
+
+    var url = Uri.parse('$apiBase/todo_planner/todo/progress/$employeeId');
     try {
       var response = await http.get(url);
       if (response.statusCode == 200) {
@@ -380,37 +369,40 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
           workProgress = data['progress'] ?? 0;
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      print('Error fetching work progress: $e');
+    }
   }
 
-  Future<void> fetchLeaveStats(String empId) async {
-    var url = Uri.parse('$apiBase/apply/leave-balance/$empId');
+  Future<void> fetchLeaveStatus() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final employeeId = userProvider.employeeId ?? '';
+    if (employeeId.isEmpty) return;
+
+    var url = Uri.parse('$apiBase/apply/leave-balance/$employeeId'); // updated
     try {
       var response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final balances = data['balances'] ?? {};
 
-        int totalUsed =
-            (balances['casual']?['used'] ?? 0) +
-            (balances['sick']?['used'] ?? 0) +
-            (balances['sad']?['used'] ?? 0);
+        final balances = data['balances'] ?? {};
+        int casualUsed = balances['casual']?['used'] ?? 0;
+        int sickUsed = balances['sick']?['used'] ?? 0;
+        int sadUsed = balances['sad']?['used'] ?? 0;
+
+        int totalUsed = casualUsed + sickUsed + sadUsed;
+        int totalAllowed = 12 * 3; // assuming each type has 12 allowance
 
         setState(() {
           leaveUsed = totalUsed;
-          int totalLeaves =
-              (balances['casual']?['total'] ?? 0) +
-              (balances['sick']?['total'] ?? 0) +
-              (balances['sad']?['total'] ?? 0);
-
-          double percent = totalLeaves > 0
-              ? (leaveUsed / totalLeaves) * 100
-              : 0;
-          leavePercent = percent.toStringAsFixed(0);
-          presentPercent = (100 - percent).toStringAsFixed(0);
+          leavePercent = ((totalUsed / totalAllowed) * 100).toStringAsFixed(1);
+          presentPercent = (100 - (totalUsed / totalAllowed * 100))
+              .toStringAsFixed(1);
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      print('Error fetching leave stats: $e');
+    }
   }
 
   // ---------------- UI ----------------
@@ -529,7 +521,7 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
       child: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: DataTable(
-          headingRowColor: MaterialStateColor.resolveWith(
+          headingRowColor: WidgetStateColor.resolveWith(
             (_) => Colors.blueGrey.shade700,
           ),
           columns: const [
@@ -601,34 +593,6 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
           ],
         ),
       ),
-    );
-  }
-
-  // ✅ Flag cell with icon + color
-  Widget buildFlagCell(String? flagValue) {
-    String flag = (flagValue ?? '').toLowerCase();
-    Color color;
-    IconData icon = Icons.flag;
-
-    if (flag.contains('red')) {
-      color = Colors.red;
-    } else if (flag.contains('yellow')) {
-      color = Colors.amber;
-    } else if (flag.contains('green')) {
-      color = Colors.green;
-    } else {
-      color = Colors.grey;
-    }
-
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 6),
-        Text(
-          flagValue ?? 'Unknown',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 

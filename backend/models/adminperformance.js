@@ -14,8 +14,6 @@ const reviewSchema = new mongoose.Schema({
     default: "Green Flag" 
   },
   reviewedAt: { type: Date, default: Date.now },
-  reviewYear: { type: Number, required: true },
-  reviewMonth: { type: Number, required: true },
 }, { timestamps: true });
 
 // Pre-save hook → auto add year & month

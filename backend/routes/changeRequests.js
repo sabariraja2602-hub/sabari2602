@@ -2,10 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const ChangeRequest = require('../models/changeRequest');
-const Employee = require('../models/profile'); // ✅ employee profile model
+const Employee = require('../models/profile'); // ✅ fixed import
 
-// --------------------
-// Create a change request (employee)
 // --------------------
 // Create a change request (employee)
 router.post('/profile/:id/request-change', async (req, res) => {
@@ -16,18 +14,16 @@ router.post('/profile/:id/request-change', async (req, res) => {
     if (!field || typeof newValue === 'undefined') {
       return res.status(400).json({ message: 'field and newValue required' });
     }
+    
 
-    // ✅ fetch employee to get name
-    const employee = await Employee.findOne({ id: employeeId }).lean();
 
     const request = new ChangeRequest({
       employeeId,
-      full_name: fullName,
+      full_name: fullName,   // 👈 add name directly
       field,
       oldValue: oldValue ?? '',
       newValue: newValue.toString(),
       requestedBy: requestedBy ?? employeeId,
-      requestedByName: employee?.fullName || "Unknown",
     });
 
     await request.save();
@@ -38,15 +34,17 @@ router.post('/profile/:id/request-change', async (req, res) => {
   }
 });
 
-
 // --------------------
-// Approve a request
+// Approve a request (⚡ moved above /:id)
 router.post('/:id/approve', async (req, res) => {
   try {
-    const requestId = req.params.id;
+    const requestId = req.params.id.trim();
+    console.log("Approve requestId:", requestId);
+
     const resolver = req.body.resolvedBy || 'superadmin';
 
     const reqDoc = await ChangeRequest.findById(requestId);
+    console.log("Found request:", reqDoc);
     if (!reqDoc) return res.status(404).json({ message: 'Request not found' });
     if (reqDoc.status !== 'pending') {
       return res.status(400).json({ message: 'Request already resolved' });
@@ -57,12 +55,14 @@ router.post('/:id/approve', async (req, res) => {
     updateObj[reqDoc.field] = reqDoc.newValue;
 
     const updatedEmployee = await Employee.findOneAndUpdate(
-      { id: reqDoc.employeeId }, // ✅ ensure schema field matches
+      { id: reqDoc.employeeId }, // ✅ fixed to match schema
       { $set: updateObj },
       { new: true }
     );
+    console.log("Updated employee:", updatedEmployee);
 
     if (!updatedEmployee) {
+      console.warn(`Employee not found for employeeId=${reqDoc.employeeId}`);
       return res.status(404).json({ message: 'Employee not found' });
     }
 
@@ -78,12 +78,14 @@ router.post('/:id/approve', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Failed to approve request:', err);
+    
+
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
 // --------------------
-// Decline a request
+// Decline a request (⚡ moved above /:id)
 router.post('/:id/decline', async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -106,25 +108,22 @@ router.post('/:id/decline', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-
 // --------------------
-// List all requests (with employeeName)
+// List all requests
 router.get('/', async (req, res) => {
   try {
     const status = req.query.status || 'pending';
     const requests = await ChangeRequest.find(status ? { status } : {})
       .sort({ createdAt: -1 })
       .lean();
-
     res.status(200).json(requests);
   } catch (err) {
     console.error('❌ Failed to fetch requests:', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-
 // --------------------
-// Get single request
+// Get single request (⚡ keep last)
 router.get('/:id', async (req, res) => {
   try {
     const reqDoc = await ChangeRequest.findById(req.params.id).lean();
