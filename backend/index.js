@@ -51,6 +51,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cors({
+  origin: ["https://zeai-hrm00.netlify.app"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
+
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
