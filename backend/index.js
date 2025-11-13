@@ -270,7 +270,7 @@ mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
     server.listen(PORT, () =>
-      console.log(`🚀 Server + Socket.IO running at http://localhost:${PORT}`)
+      console.log(`🚀 Server + Socket.IO running at https://sabari2602.onrender.com${PORT}`)
     );
   })
   .catch(err => console.error('❌ MongoDB connection error:', err));
