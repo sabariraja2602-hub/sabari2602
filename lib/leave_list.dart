@@ -17,7 +17,9 @@ class _LeaveListState extends State<LeaveList> {
   Future<void> fetchLeaves() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/api/leave'), // Android emulator
+        Uri.parse(
+          'https://sabari2602.onrender.com/api/leave',
+        ), // Android emulator
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -54,24 +56,29 @@ class _LeaveListState extends State<LeaveList> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage))
-              : ListView.builder(
-                  itemCount: leaves.length,
-                  itemBuilder: (context, index) {
-                    final leave = leaves[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        leading: const Icon(Icons.event_note),
-                        title: Text(
-                          '${leave['leaveType']} - ${leave['reason']}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text('From: ${leave['fromDate']}  To: ${leave['toDate']}'),
-                      ),
-                    );
-                  },
-                ),
+          ? Center(child: Text(errorMessage))
+          : ListView.builder(
+              itemCount: leaves.length,
+              itemBuilder: (context, index) {
+                final leave = leaves[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.event_note),
+                    title: Text(
+                      '${leave['leaveType']} - ${leave['reason']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      'From: ${leave['fromDate']}  To: ${leave['toDate']}',
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

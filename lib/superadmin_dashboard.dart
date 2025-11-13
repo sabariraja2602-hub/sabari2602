@@ -71,40 +71,45 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   /// Fetch employee name from backend.
   /// Attempts the common `/api/employees/:id` route first, then falls back to `/get-employee-name/:id`.
   /// Fetch employee name from backend (single endpoint now).
-Future<void> fetchEmployeeName() async {
-  final employeeId =
-      Provider.of<UserProvider>(context, listen: false).employeeId;
+  Future<void> fetchEmployeeName() async {
+    final employeeId = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).employeeId;
 
-  if (employeeId == null || employeeId.trim().isEmpty) {
-    setState(() => employeeName = null);
-    return;
-  }
-
-  try {
-    final uri = Uri.parse("http://localhost:5000/api/employees/$employeeId");
-    final resp = await http.get(uri);
-
-    if (resp.statusCode == 200) {
-      final data = json.decode(resp.body);
-      setState(() {
-        employeeName = data['employeeName']?.toString();
-      });
-    } else {
+    if (employeeId == null || employeeId.trim().isEmpty) {
       setState(() => employeeName = null);
-      debugPrint("❌ fetchEmployeeName failed: ${resp.statusCode}");
+      return;
     }
-  } catch (e) {
-    debugPrint("❌ Error fetching employee name: $e");
-    setState(() => employeeName = null);
-  }
-}
 
+    try {
+      final uri = Uri.parse(
+        "https://sabari2602.onrender.com/api/employees/$employeeId",
+      );
+      final resp = await http.get(uri);
+
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        setState(() {
+          employeeName = data['employeeName']?.toString();
+        });
+      } else {
+        setState(() => employeeName = null);
+        debugPrint("❌ fetchEmployeeName failed: ${resp.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching employee name: $e");
+      setState(() => employeeName = null);
+    }
+  }
 
   /// Fetch leave balances from backend.
   Future<void> _fetchLeaveBalance() async {
     try {
-      final employeeId =
-          Provider.of<UserProvider>(context, listen: false).employeeId?.trim();
+      final employeeId = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).employeeId?.trim();
 
       if (employeeId == null || employeeId.isEmpty) {
         setState(() {
@@ -116,7 +121,7 @@ Future<void> fetchEmployeeName() async {
 
       final year = DateTime.now().year;
       final url =
-          "http://localhost:5000/apply/leave-balance/$employeeId?year=$year";
+          "https://sabari2602.onrender.com/apply/leave-balance/$employeeId?year=$year";
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -149,10 +154,12 @@ Future<void> fetchEmployeeName() async {
   }
 
   /// Fetch pending count for a role (used by FutureBuilder)
-   Future<int> fetchPendingCount(String userRole) async {
+  Future<int> fetchPendingCount(String userRole) async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/apply/pending-count?approver=$userRole"),
+        Uri.parse(
+          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole",
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -168,12 +175,11 @@ Future<void> fetchEmployeeName() async {
     }
   }
 
-  
-/// Delete employee comment
+  /// Delete employee comment
   Future<void> _deleteEmployeeComment(String id) async {
     try {
       final response = await http.delete(
-        Uri.parse("http://localhost:5000/review-decision/$id"),
+        Uri.parse("https://sabari2602.onrender.com/review-decision/$id"),
       );
 
       if (response.statusCode == 200) {
@@ -184,22 +190,23 @@ Future<void> fetchEmployeeName() async {
         await _showEmployeeComments(); // refresh dialog
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Failed to delete (${response.statusCode})")),
+          SnackBar(
+            content: Text("❌ Failed to delete (${response.statusCode})"),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
     }
   }
 
-
-   /// Employee comments popup (with delete option)
+  /// Employee comments popup (with delete option)
   Future<void> _showEmployeeComments() async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/review-decision"),
+        Uri.parse("https://sabari2602.onrender.com/review-decision"),
         headers: {"Accept": "application/json"},
       );
 
@@ -209,8 +216,10 @@ Future<void> fetchEmployeeName() async {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text("Employee Feedback",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              "Employee Feedback",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             content: SizedBox(
               width: double.maxFinite,
               child: data.isEmpty
@@ -231,22 +240,30 @@ Future<void> fetchEmployeeName() async {
                                   ? Colors.green
                                   : Colors.red,
                             ),
-                            title: Text(item["employeeName"] ?? "Unknown",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                            title: Text(
+                              item["employeeName"] ?? "Unknown",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(item["position"] ?? ""),
                                 const SizedBox(height: 4),
-                                Text(item["comment"] ?? "",
-                                    style: const TextStyle(
-                                        fontStyle: FontStyle.italic)),
+                                Text(
+                                  item["comment"] ?? "",
+                                  style: const TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
                                 Text(
                                   "Submitted: ${_formatDate(item["createdAt"])}",
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ],
                             ),
@@ -265,24 +282,26 @@ Future<void> fetchEmployeeName() async {
             ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Close"))
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Close"),
+              ),
             ],
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  "Failed to load feedback (${response.statusCode})")),
+            content: Text("Failed to load feedback (${response.statusCode})"),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
     }
   }
+
   // Utility: clear picked image after successful submit or cancel
   void _clearPickedImage() {
     setState(() {
@@ -298,304 +317,325 @@ Future<void> fetchEmployeeName() async {
   /// - Browse button accepts only .jpg files
   /// - Submits multipart/form-data to /api/employees/add with field "employeeImage"
   void _showAddEmployeeDialog() {
-  final idController = TextEditingController();
-  final nameController = TextEditingController();
-  final positionController = TextEditingController();
-  final domainController = TextEditingController();
-  final imageController = TextEditingController();
+    final idController = TextEditingController();
+    final nameController = TextEditingController();
+    final positionController = TextEditingController();
+    final domainController = TextEditingController();
+    final imageController = TextEditingController();
 
-  showDialog(
-    context: context,
-    builder: (_) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
-      child: Container(
-        width: 420,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF873AB7), Color(0xFF673AB7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+        child: Container(
+          width: 420,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF873AB7), Color(0xFF673AB7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Add New Employee",
-                    style: TextStyle(
+          ),
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Add New Employee",
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87),
-                  ),
-                  const SizedBox(height: 18),
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
 
-                  // Image Picker
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: imageController,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: "Profile Image (.jpg)",
-                            border: OutlineInputBorder(),
+                    // Image Picker
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: imageController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: "Profile Image (.jpg)",
+                              border: OutlineInputBorder(),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (kIsWeb) {
-                            // Web: pick file as bytes
-                            final result = await FilePicker.platform.pickFiles(
-                              type: FileType.custom,
-                              allowedExtensions: ['jpg', 'jpeg'],
-                              withData: true,
-                            );
-                            if (result != null && result.files.single.bytes != null) {
-                              setState(() {
-                                _pickedImageBytes = result.files.single.bytes;
-                                // lowercase extension to satisfy Multer
-                                _pickedFileName =
-                                    result.files.single.name.toLowerCase();
-                                imageController.text = _pickedFileName!;
-                              });
-                            }
-                          } else {
-                            // Mobile: pick image from gallery
-                            final picked =
-                                await _picker.pickImage(source: ImageSource.gallery);
-                            if (picked != null) {
-                              final lower = picked.path.toLowerCase();
-                              if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (kIsWeb) {
+                              // Web: pick file as bytes
+                              final result = await FilePicker.platform
+                                  .pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['jpg', 'jpeg'],
+                                    withData: true,
+                                  );
+                              if (result != null &&
+                                  result.files.single.bytes != null) {
                                 setState(() {
-                                  _pickedImageFile = File(picked.path);
-                                  _pickedFileName = picked.name.toLowerCase();
-                                  imageController.text = picked.name;
+                                  _pickedImageBytes = result.files.single.bytes;
+                                  // lowercase extension to satisfy Multer
+                                  _pickedFileName = result.files.single.name
+                                      .toLowerCase();
+                                  imageController.text = _pickedFileName!;
                                 });
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text("⚠ Please select a .jpg image only"),
-                                  ),
-                                );
+                              }
+                            } else {
+                              // Mobile: pick image from gallery
+                              final picked = await _picker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (picked != null) {
+                                final lower = picked.path.toLowerCase();
+                                if (lower.endsWith('.jpg') ||
+                                    lower.endsWith('.jpeg')) {
+                                  setState(() {
+                                    _pickedImageFile = File(picked.path);
+                                    _pickedFileName = picked.name.toLowerCase();
+                                    imageController.text = picked.name;
+                                  });
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "⚠ Please select a .jpg image only",
+                                      ),
+                                    ),
+                                  );
+                                }
                               }
                             }
-                          }
-                        },
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text("Browse"),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Employee ID
+                    TextField(
+                      controller: idController,
+                      decoration: const InputDecoration(
+                        labelText: "Employee ID",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Employee Name
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: "Employee Name",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Position
+                    TextField(
+                      controller: positionController,
+                      decoration: const InputDecoration(
+                        labelText: "Position",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Domain
+                    TextField(
+                      controller: domainController,
+                      decoration: const InputDecoration(
+                        labelText: "Domain",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        child: const Text("Browse"),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                        onPressed: () async {
+                          final empId = idController.text.trim();
+                          final name = nameController.text.trim();
+                          final position = positionController.text.trim();
+                          final domain = domainController.text.trim();
 
-                  // Employee ID
-                  TextField(
-                    controller: idController,
-                    decoration: const InputDecoration(
-                      labelText: "Employee ID",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Employee Name
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: "Employee Name",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Position
-                  TextField(
-                    controller: positionController,
-                    decoration: const InputDecoration(
-                      labelText: "Position",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Domain
-                  TextField(
-                    controller: domainController,
-                    decoration: const InputDecoration(
-                      labelText: "Domain",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () async {
-                        final empId = idController.text.trim();
-                        final name = nameController.text.trim();
-                        final position = positionController.text.trim();
-                        final domain = domainController.text.trim();
-
-                        if (empId.isEmpty ||
-                            name.isEmpty ||
-                            position.isEmpty ||
-                            domain.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("⚠ Please fill all fields"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        if (_pickedImageBytes == null && _pickedImageFile == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text("⚠ Please select a .jpg file to upload"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        try {
-                          var request = http.MultipartRequest(
-                            'POST',
-                            Uri.parse("http://localhost:5000/api/employees"),
-                          );
-
-                          request.fields['employeeId'] = empId;
-                          request.fields['employeeName'] = name;
-                          request.fields['position'] = position;
-                          request.fields['domain'] = domain;
-
-                          if (kIsWeb && _pickedImageBytes != null) {
-                            request.files.add(
-                              http.MultipartFile.fromBytes(
-                                'employeeImage',
-                                _pickedImageBytes!,
-                                filename: _pickedFileName ?? 'upload.jpg',
-                                contentType:
-                                    MediaType('image', 'jpeg'), // Multer safe
-                              ),
-                            );
-                          } else if (!kIsWeb && _pickedImageFile != null) {
-                            request.files.add(await http.MultipartFile.fromPath(
-                              'employeeImage',
-                              _pickedImageFile!.path,
-                              filename: _pickedFileName ??
-                                  _pickedImageFile!.path.split('/').last,
-                            ));
-                          }
-
-                          final streamedResponse = await request.send();
-                          final response =
-                              await http.Response.fromStream(streamedResponse);
-
-                          if (response.statusCode == 200 ||
-                              response.statusCode == 201) {
-                            _clearPickedImage();
-                            imageController.clear();
-                            idController.clear();
-                            nameController.clear();
-                            positionController.clear();
-                            domainController.clear();
-
+                          if (empId.isEmpty ||
+                              name.isEmpty ||
+                              position.isEmpty ||
+                              domain.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content:
-                                      Text("✅ Employee added successfully!")),
+                                content: Text("⚠ Please fill all fields"),
+                              ),
                             );
-                            Navigator.pop(context);
-
-                            // Refresh Employee List
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const EmployeeListScreen()),
-                            );
-                          } else {
-                            String msg = "❌ Failed: ${response.statusCode}";
-                            try {
-                              final body = jsonDecode(response.body);
-                              if (body is Map && body['message'] != null) {
-                                msg = body['message'];
-                              }
-                            } catch (_) {}
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text(msg)));
+                            return;
                           }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("❌ Error: $e")),
-                          );
-                        }
-                      },
-                      child: const Text("Add Employee",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+
+                          if (_pickedImageBytes == null &&
+                              _pickedImageFile == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "⚠ Please select a .jpg file to upload",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          try {
+                            var request = http.MultipartRequest(
+                              'POST',
+                              Uri.parse(
+                                "https://sabari2602.onrender.com/api/employees",
+                              ),
+                            );
+
+                            request.fields['employeeId'] = empId;
+                            request.fields['employeeName'] = name;
+                            request.fields['position'] = position;
+                            request.fields['domain'] = domain;
+
+                            if (kIsWeb && _pickedImageBytes != null) {
+                              request.files.add(
+                                http.MultipartFile.fromBytes(
+                                  'employeeImage',
+                                  _pickedImageBytes!,
+                                  filename: _pickedFileName ?? 'upload.jpg',
+                                  contentType: MediaType(
+                                    'image',
+                                    'jpeg',
+                                  ), // Multer safe
+                                ),
+                              );
+                            } else if (!kIsWeb && _pickedImageFile != null) {
+                              request.files.add(
+                                await http.MultipartFile.fromPath(
+                                  'employeeImage',
+                                  _pickedImageFile!.path,
+                                  filename:
+                                      _pickedFileName ??
+                                      _pickedImageFile!.path.split('/').last,
+                                ),
+                              );
+                            }
+
+                            final streamedResponse = await request.send();
+                            final response = await http.Response.fromStream(
+                              streamedResponse,
+                            );
+
+                            if (response.statusCode == 200 ||
+                                response.statusCode == 201) {
+                              _clearPickedImage();
+                              imageController.clear();
+                              idController.clear();
+                              nameController.clear();
+                              positionController.clear();
+                              domainController.clear();
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "✅ Employee added successfully!",
+                                  ),
+                                ),
+                              );
+                              Navigator.pop(context);
+
+                              // Refresh Employee List
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const EmployeeListScreen(),
+                                ),
+                              );
+                            } else {
+                              String msg = "❌ Failed: ${response.statusCode}";
+                              try {
+                                final body = jsonDecode(response.body);
+                                if (body is Map && body['message'] != null) {
+                                  msg = body['message'];
+                                }
+                              } catch (_) {}
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(msg)));
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("❌ Error: $e")),
+                            );
+                          }
+                        },
+                        child: const Text(
+                          "Add Employee",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  ).then((_) {
-    _clearPickedImage();
-    imageController.clear();
-    idController.clear();
-    nameController.clear();
-    positionController.clear();
-    domainController.clear();
-  });
-}
-
-
+    ).then((_) {
+      _clearPickedImage();
+      imageController.clear();
+      idController.clear();
+      nameController.clear();
+      positionController.clear();
+      domainController.clear();
+    });
+  }
 
   /// Helper: format date in YYYY-MM-DD hh:mm with zero padding
-String _formatDate(dynamic iso) {
-  if (iso == null) return 'N/A';
-  try {
-    final dt = DateTime.parse(iso.toString()).toLocal();
-    return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
-  } catch (_) {
-    return iso.toString();
+  String _formatDate(dynamic iso) {
+    if (iso == null) return 'N/A';
+    try {
+      final dt = DateTime.parse(iso.toString()).toLocal();
+      return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
+    } catch (_) {
+      return iso.toString();
+    }
   }
-}
 
   /// 🔹 Fetch pending change requests
   Future<List<dynamic>> _fetchPendingRequests() async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/requests?status=pending"),
+        Uri.parse("https://sabari2602.onrender.com/requests?status=pending"),
         headers: {"Accept": "application/json"},
       );
       if (response.statusCode == 200) {
@@ -610,7 +650,9 @@ String _formatDate(dynamic iso) {
   Future<void> _approveRequest(String requestId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/requests/$requestId/approve'),
+        Uri.parse(
+          'https://sabari2602.onrender.com/requests/$requestId/approve',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'resolvedBy':
@@ -635,7 +677,9 @@ String _formatDate(dynamic iso) {
   Future<void> _declineRequest(String requestId) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/requests/$requestId/decline'),
+        Uri.parse(
+          'https://sabari2602.onrender.com/requests/$requestId/decline',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'resolvedBy':
@@ -657,90 +701,91 @@ String _formatDate(dynamic iso) {
     }
   }
 
- Future<void> _showChangeRequests() async {
-  final requests = await _fetchPendingRequests();
+  Future<void> _showChangeRequests() async {
+    final requests = await _fetchPendingRequests();
 
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text("Pending Change Requests"),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: requests.isEmpty
-            ? const Text("No pending requests.")
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: requests.length,
-                itemBuilder: (context, idx) {
-                  final r = requests[idx];
-                  final createdAt = r['createdAt'] != null
-                      ? _formatDate(r['createdAt'])
-                      : '';
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Pending Change Requests"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: requests.isEmpty
+              ? const Text("No pending requests.")
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: requests.length,
+                  itemBuilder: (context, idx) {
+                    final r = requests[idx];
+                    final createdAt = r['createdAt'] != null
+                        ? _formatDate(r['createdAt'])
+                        : '';
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      title: Text(
-                        '${r['full_name']} — ${r['field'] ?? 'Unknown'}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Employee ID: ${r['employeeId']}'),
-                          Text('Field: ${r['field']}'),
-                          Text('Old: ${r['oldValue'] ?? ''}'),
-                          Text('New: ${r['newValue'] ?? ''}'),
-                          Text('Requested by: ${r['requestedBy'] ?? ''}'),
-                          Text(
-                            'Created: $createdAt',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          '${r['full_name']} — ${r['field'] ?? 'Unknown'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Employee ID: ${r['employeeId']}'),
+                            Text('Field: ${r['field']}'),
+                            Text('Old: ${r['oldValue'] ?? ''}'),
+                            Text('New: ${r['newValue'] ?? ''}'),
+                            Text('Requested by: ${r['requestedBy'] ?? ''}'),
+                            Text(
+                              'Created: $createdAt',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        isThreeLine: true,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.check,
+                                color: Colors.green,
+                              ),
+                              tooltip: "Approve",
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                                await _approveRequest(r['_id']);
+                                await _showChangeRequests();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.red),
+                              tooltip: "Reject",
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                                await _declineRequest(r['_id']);
+                                await _showChangeRequests();
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                      isThreeLine: true,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.check, color: Colors.green),
-                            tooltip: "Approve",
-                            onPressed: () async {
-                              Navigator.of(context).pop();
-                              await _approveRequest(r['_id']);
-                              await _showChangeRequests();
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            tooltip: "Reject",
-                            onPressed: () async {
-                              Navigator.of(context).pop();
-                              await _declineRequest(r['_id']);
-                              await _showChangeRequests();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Close"),
+                    );
+                  },
+                ),
         ),
-      ],
-    ),
-  );
-}
-
-
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -751,8 +796,10 @@ String _formatDate(dynamic iso) {
     if (_error != null) {
       return Scaffold(
         body: Center(
-          child: Text(_error!,
-              style: const TextStyle(color: Colors.red, fontSize: 16)),
+          child: Text(
+            _error!,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
         ),
       );
     }
@@ -796,35 +843,44 @@ String _formatDate(dynamic iso) {
         children: [
           _quickActionButton('Download Payslip', () {
             Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const EmpPayroll()));
+              context,
+              MaterialPageRoute(builder: (_) => const EmpPayroll()),
+            );
           }),
           _quickActionButton('Mark Attendance', () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AttendanceLoginPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AttendanceLoginPage()),
+            );
           }),
           _quickActionButton('Notifications Preview', () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => AdminNotificationsPage(
-                  empId: Provider.of<UserProvider>(context, listen: false)
-                          .employeeId ??
+                  empId:
+                      Provider.of<UserProvider>(
+                        context,
+                        listen: false,
+                      ).employeeId ??
                       '',
                 ),
               ),
             );
           }),
           _quickActionButton('Performance Review', () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => SuperadminPerformancePage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SuperadminPerformancePage()),
+            );
           }),
           _quickActionButton('Employee Feedback', _showEmployeeComments),
           _quickActionButton('Request', _showChangeRequests),
           _quickActionButton('Company Events', () {
             Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const CompanyEventsScreen()));
+              context,
+              MaterialPageRoute(builder: (_) => const CompanyEventsScreen()),
+            );
           }),
           _quickActionButton('Add Employee', _showAddEmployeeDialog),
           _quickActionButton('Employee List', () {
@@ -859,11 +915,14 @@ String _formatDate(dynamic iso) {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: Text("$count",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
+                        child: Text(
+                          "$count",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -885,8 +944,10 @@ String _formatDate(dynamic iso) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 3,
       ),
-      child: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+      child: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
     );
   }
 
@@ -910,8 +971,10 @@ String _formatDate(dynamic iso) {
               subtitle: 'Today: $formattedDate',
               buttonLabel: 'To Do List',
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ToDoPlanner()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ToDoPlanner()),
+                );
               },
             ),
             _leaveCardTile(
@@ -922,7 +985,9 @@ String _formatDate(dynamic iso) {
               buttonLabel: 'View',
               onTap: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (_) => ApplyLeave()));
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                );
               },
             ),
             _leaveCardTile(
@@ -933,7 +998,9 @@ String _formatDate(dynamic iso) {
               buttonLabel: 'View',
               onTap: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (_) => ApplyLeave()));
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                );
               },
             ),
             _leaveCardTile(
@@ -944,7 +1011,9 @@ String _formatDate(dynamic iso) {
               buttonLabel: 'View',
               onTap: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (_) => ApplyLeave()));
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                );
               },
             ),
           ],
@@ -994,15 +1063,17 @@ String _formatDate(dynamic iso) {
               Text(
                 title is String ? title : title.toString(),
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 8),
-              Text(subtitle,
-                  textAlign: TextAlign.center,
-                  style:
-                      const TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
             ],
           ),
           ElevatedButton(
@@ -1011,7 +1082,8 @@ String _formatDate(dynamic iso) {
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(buttonLabel),
           ),

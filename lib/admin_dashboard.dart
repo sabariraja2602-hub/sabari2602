@@ -51,14 +51,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<void> fetchEmployeeName() async {
-    final employeeId =
-        Provider.of<UserProvider>(context, listen: false).employeeId;
+    final employeeId = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).employeeId;
 
     if (employeeId == null) return;
 
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/get-employee-name/$employeeId"),
+        Uri.parse(
+          "https://sabari2602.onrender.com/get-employee-name/$employeeId",
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -77,8 +81,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   /// 🔹 Fetch leave balances
   Future<void> _fetchLeaveBalance() async {
     try {
-      final employeeId =
-          Provider.of<UserProvider>(context, listen: false).employeeId?.trim();
+      final employeeId = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).employeeId?.trim();
 
       if (employeeId == null || employeeId.isEmpty) {
         setState(() {
@@ -90,7 +96,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       final year = DateTime.now().year;
       final url =
-          "http://localhost:5000/apply/leave-balance/$employeeId?year=$year";
+          "https://sabari2602.onrender.com/apply/leave-balance/$employeeId?year=$year";
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -126,7 +132,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> fetchPendingCount(String userRole) async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/apply/pending-count?approver=$userRole"),
+        Uri.parse(
+          "https://sabari2602.onrender.com/apply/pending-count?approver=$userRole",
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -146,7 +154,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> _showEmployeeComments() async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/review-decision/feedback/employee"),
+        Uri.parse(
+          "https://sabari2602.onrender.com/review-decision/feedback/employee",
+        ),
         headers: {"Accept": "application/json"},
       );
 
@@ -182,7 +192,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             title: Text(
                               item["employeeName"] ?? "Unknown",
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,13 +204,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 Text(
                                   item["comment"] ?? "",
                                   style: const TextStyle(
-                                      fontStyle: FontStyle.italic),
+                                    fontStyle: FontStyle.italic,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   "Submitted: ${_formatDate(item["createdAt"])}",
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ],
                             ),
@@ -212,7 +227,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text("Close"),
-              )
+              ),
             ],
           ),
         );
@@ -220,27 +235,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                "❌ Failed to load employee feedback (HTTP ${response.statusCode})"),
+              "❌ Failed to load employee feedback (HTTP ${response.statusCode})",
+            ),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
     }
   }
 
   /// ✅ Helper: format date nicely
-String _formatDate(dynamic iso) {
-  if (iso == null) return 'N/A';
-  try {
-    final dt = DateTime.parse(iso.toString()).toLocal();
-    return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
-  } catch (_) {
-    return iso.toString();
+  String _formatDate(dynamic iso) {
+    if (iso == null) return 'N/A';
+    try {
+      final dt = DateTime.parse(iso.toString()).toLocal();
+      return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
+    } catch (_) {
+      return iso.toString();
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +335,8 @@ String _formatDate(dynamic iso) {
               context,
               MaterialPageRoute(
                 builder: (_) => AdminNotificationsPage(
-                  empId: Provider.of<UserProvider>(
+                  empId:
+                      Provider.of<UserProvider>(
                         context,
                         listen: false,
                       ).employeeId ??

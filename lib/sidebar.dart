@@ -19,12 +19,10 @@ import 'employeenotification.dart';
 import 'admin_notification.dart';
 import 'attendance_login.dart';
 import 'company_events.dart';
- 
 
 class Sidebar extends StatefulWidget {
   final Widget body;
   final String title;
-
 
   const Sidebar({super.key, required this.body, required this.title});
 
@@ -34,9 +32,8 @@ class Sidebar extends StatefulWidget {
 
 class _SidebarState extends State<Sidebar> {
   String employeeName = "Employee";
-String position = "Position";
-String? employeeImage; // ✅ new variable
-
+  String position = "Position";
+  String? employeeImage; // ✅ new variable
 
   @override
   void initState() {
@@ -44,37 +41,38 @@ String? employeeImage; // ✅ new variable
     fetchEmployeeDetails();
   }
 
- Future<void> fetchEmployeeDetails() async {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-  final employeeId = userProvider.employeeId;
+  Future<void> fetchEmployeeDetails() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final employeeId = userProvider.employeeId;
 
-  if (employeeId == null) return;
+    if (employeeId == null) return;
 
-  try {
-    final response = await http.get(
-      Uri.parse('http://localhost:5000/get-employee-name/$employeeId'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://sabari2602.onrender.com/get-employee-name/$employeeId',
+        ),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      setState(() {
-        employeeName = data['employeeName'] ?? 'Employee';
-        position = data['position'] ?? 'Position';
-        employeeImage = data['employeeImage']; // ✅ added
-      });
+        setState(() {
+          employeeName = data['employeeName'] ?? 'Employee';
+          position = data['position'] ?? 'Position';
+          employeeImage = data['employeeImage']; // ✅ added
+        });
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        userProvider.setPosition(position);
-      });
-    } else {
-      print('❌ Failed to fetch name: ${response.statusCode}');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          userProvider.setPosition(position);
+        });
+      } else {
+        print('❌ Failed to fetch name: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching employee name: $e');
     }
-  } catch (e) {
-    print('❌ Error fetching employee name: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +111,7 @@ String? employeeImage; // ✅ new variable
   Widget _buildHeader(BuildContext context) {
     final Map<String, Widget> pageMap = {
       'Dashboard': const EmployeeDashboard(),
-      'AdminDashboard' : const AdminDashboard(),
+      'AdminDashboard': const AdminDashboard(),
       'SuperAdminDashboard': const SuperAdminDashboard(),
       'Leave Management': const LeaveManagement(),
       'Payroll Management': const EmpPayroll(),
@@ -168,40 +166,43 @@ String? employeeImage; // ✅ new variable
                       return const Iterable<String>.empty();
                     }
                     return options.where(
-                      (String option) => option
-                          .toLowerCase()
-                          .contains(textEditingValue.text.toLowerCase()),
+                      (String option) => option.toLowerCase().contains(
+                        textEditingValue.text.toLowerCase(),
+                      ),
                     );
                   },
                   onSelected: (String selected) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => pageMap[selected]!,
-                      ),
+                      MaterialPageRoute(builder: (_) => pageMap[selected]!),
                     );
                   },
                   fieldViewBuilder:
                       (context, controller, focusNode, onEditingComplete) {
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      onEditingComplete: onEditingComplete,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Search here...',
-                        hintStyle: const TextStyle(color: Colors.white70),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white70),
-                        filled: true,
-                        fillColor: const Color(0xFF2D2F41),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    );
-                  },
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          onEditingComplete: onEditingComplete,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Search here...',
+                            hintStyle: const TextStyle(color: Colors.white70),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Colors.white70,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFF2D2F41),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        );
+                      },
                   optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topRight,
@@ -228,7 +229,9 @@ String? employeeImage; // ✅ new variable
                                     ),
                                     child: Text(
                                       option,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -248,90 +251,117 @@ String? employeeImage; // ✅ new variable
     );
   }
 
- // inside _buildSidebar(...)
-Widget _buildSidebar(BuildContext context) {
-  final userProvider = Provider.of<UserProvider>(context);
-  final role = userProvider.position ?? position; // fallback
+  // inside _buildSidebar(...)
+  Widget _buildSidebar(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final role = userProvider.position ?? position; // fallback
 
-  // Select Dashboard based on role
-  Widget getDashboard() {
-    if (role == "Admin") return const AdminDashboard();
-    if (role == "Founder") return const SuperAdminDashboard();
-     if (role == "HR") return const SuperAdminDashboard();
-    return const EmployeeDashboard();
-  }
+    // Select Dashboard based on role
+    Widget getDashboard() {
+      if (role == "Admin") return const AdminDashboard();
+      if (role == "Founder") return const SuperAdminDashboard();
+      if (role == "HR") return const SuperAdminDashboard();
+      return const EmployeeDashboard();
+    }
 
-  return Drawer(
-    child: Container(
-      width: 180,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(10),
-          bottomRight: Radius.circular(10),
+    return Drawer(
+      child: Container(
+        width: 180,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
         ),
-      ),
-      child: ListView(
-        children: [
-          const SizedBox(height: 40),
-          ListTile(
-         leading: CircleAvatar(
-    radius: 25,
-    backgroundImage: employeeImage != null
-        ? NetworkImage('http://localhost:5000${employeeImage!}')
-        : const AssetImage('assets/profile.png') as ImageProvider,
-  ),
-  title: Text(
-    employeeName,
-    style: const TextStyle(fontWeight: FontWeight.bold),
-  ),
-  subtitle: Text(
-    position,
-    style: const TextStyle(fontSize: 14, color: Colors.grey),
-  ),
-),
+        child: ListView(
+          children: [
+            const SizedBox(height: 40),
+            ListTile(
+              leading: CircleAvatar(
+                radius: 25,
+                backgroundImage: employeeImage != null
+                    ? NetworkImage(
+                        'https://sabari2602.onrender.com${employeeImage!}',
+                      )
+                    : const AssetImage('assets/profile.png') as ImageProvider,
+              ),
+              title: Text(
+                employeeName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                position,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ),
 
-          const Divider(),
+            const Divider(),
 
-          // 👇 Role-based dashboard
-          _sidebarTile(Icons.dashboard, 'Dashboard', context, getDashboard()),
+            // 👇 Role-based dashboard
+            _sidebarTile(Icons.dashboard, 'Dashboard', context, getDashboard()),
 
-          // Common menu items for all
-          _sidebarTile(Icons.calendar_month, 'Leave Management', context, const LeaveManagement()),
-          _sidebarTile(Icons.payments, 'Payroll Management', context, const EmpPayroll()),
-          _sidebarTile(Icons.how_to_reg, 'Attendance System', context, AttendanceLoginPage()),
-          _sidebarTile(Icons.analytics, 'Reports & Analytics', context, ReportsAnalyticsPage()),
-          _sidebarTile(Icons.people, 'Employee Directory', context, EmployeeDirectoryPage()),
+            // Common menu items for all
+            _sidebarTile(
+              Icons.calendar_month,
+              'Leave Management',
+              context,
+              const LeaveManagement(),
+            ),
+            _sidebarTile(
+              Icons.payments,
+              'Payroll Management',
+              context,
+              const EmpPayroll(),
+            ),
+            _sidebarTile(
+              Icons.how_to_reg,
+              'Attendance System',
+              context,
+              AttendanceLoginPage(),
+            ),
+            _sidebarTile(
+              Icons.analytics,
+              'Reports & Analytics',
+              context,
+              ReportsAnalyticsPage(),
+            ),
+            _sidebarTile(
+              Icons.people,
+              'Employee Directory',
+              context,
+              EmployeeDirectoryPage(),
+            ),
 
-          // 🔔 Notifications: admin/superadmin get AdminNotifications
-          _sidebarTile(
+            // 🔔 Notifications: admin/superadmin get AdminNotifications
+            _sidebarTile(
               Icons.notifications,
               'Notifications',
               context,
               (role == "Admin" || role == "Founder")
                   ? AdminNotificationsPage(empId: userProvider.employeeId ?? '')
                   : EmployeeNotificationsPage(
-                    empId: userProvider.employeeId ?? '',
-                  ),
+                      empId: userProvider.employeeId ?? '',
+                    ),
             ),
-          _sidebarTile(
+            _sidebarTile(
               Icons.person,
               'Employee Profile',
               context,
               EmployeeProfilePage(),
             ),
 
-          _sidebarTile(
+            _sidebarTile(
               Icons.event,
               'Company Events',
               context,
               const CompanyEventsScreen(),
             ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _sidebarTile(
     IconData icon,

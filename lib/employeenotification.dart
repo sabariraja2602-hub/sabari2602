@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -26,7 +25,6 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
   // 🔴 red: use expandedKey instead of expandedIndex
   String? expandedKey;
 
-
   final List<String> months = [
     "January",
     "February",
@@ -53,6 +51,7 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
     selectedMonth = months[DateTime.now().month - 1];
     fetchNotifs();
   }
+
   /// 🔹 Main function -> call both API
   Future<void> fetchNotifs() async {
     setState(() {
@@ -67,7 +66,7 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
       // 🔴 red: reset expandedKey on refresh
       expandedKey = null;
     });
-/*
+    /*
     final uri = Uri.parse(
       //"http://localhost:5000/notifications/$selectedMonth/${widget.empId}",
       "http://localhost:5000/api/notifications/employee/${widget.empId}",
@@ -87,11 +86,11 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
     }
   }
 
-
   /// 🔹 Fetch SMS Notifications
   Future<void> fetchSmsNotifications() async {
     final uri = Uri.parse(
-        "http://localhost:5000/notifications/employee/${widget.empId}?month=$selectedMonth&category=sms");
+      "https://sabari2602.onrender.com/notifications/employee/${widget.empId}?month=$selectedMonth&category=sms",
+    );
     final resp = await http.get(uri);
 
     if (resp.statusCode == 200) {
@@ -102,53 +101,53 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
         });
       }
     } else if (resp.statusCode == 404) {
-    // 🔹 No SMS → empty list
-    setState(() => sms = []);
-  } else {
+      // 🔹 No SMS → empty list
+      setState(() => sms = []);
+    } else {
       throw Exception(
-          "Failed to load SMS notifications. Code: ${resp.statusCode}");
+        "Failed to load SMS notifications. Code: ${resp.statusCode}",
+      );
     }
   }
-
 
   /// 🔹 Fetch Performance Notifications
   Future<void> fetchPerformanceNotifications() async {
     final uri = Uri.parse(
-       // "http://localhost:5000/api/notifications/$selectedMonth/${widget.empId}");
-       "http://localhost:5000/notifications/performance/employee/$selectedMonth/${widget.empId}");
+      // "http://localhost:5000/api/notifications/$selectedMonth/${widget.empId}");
+      "https://sabari2602.onrender.com/notifications/performance/employee/$selectedMonth/${widget.empId}",
+    );
     final resp = await http.get(uri);
 
     if (resp.statusCode == 200) {
       final decoded = jsonDecode(resp.body);
       if (decoded is List) {
         setState(() {
-          performance =
-                decoded
-                    .where(
-                      (n) =>
-                          (n['category'] as String).toLowerCase() ==
-                          'performance',
-                    )
-                    .cast<Map<String, dynamic>>()
-                    .toList();
+          performance = decoded
+              .where(
+                (n) => (n['category'] as String).toLowerCase() == 'performance',
+              )
+              .cast<Map<String, dynamic>>()
+              .toList();
 
           // 🔹 removed holidays assignment from here
           // performance = decoded.cast<Map<String, dynamic>>(); // no longer needed
         });
       }
     } else if (resp.statusCode == 404) {
-    // 🔹 No Performance → empty list
-    setState(() => performance = []);
-  } else {
+      // 🔹 No Performance → empty list
+      setState(() => performance = []);
+    } else {
       throw Exception(
-          "Failed to load Performance notifications. Code: ${resp.statusCode}");
+        "Failed to load Performance notifications. Code: ${resp.statusCode}",
+      );
     }
   }
 
   /// 🔹 Fetch Holiday Notifications
   Future<void> fetchHolidayNotifications() async {
     final uri = Uri.parse(
-        "http://localhost:5000/notifications/holiday/employee/${widget.empId}?month=$selectedMonth");
+      "http://localhost:5000/notifications/holiday/employee/${widget.empId}?month=$selectedMonth",
+    );
     final resp = await http.get(uri);
 
     if (resp.statusCode == 200) {
@@ -163,7 +162,8 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
       setState(() => holidays = []);
     } else {
       throw Exception(
-          "Failed to load Holiday notifications. Code: ${resp.statusCode}");
+        "Failed to load Holiday notifications. Code: ${resp.statusCode}",
+      );
     }
   }
 
@@ -231,12 +231,9 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
         child: DropdownButton<String>(
           value: selectedMonth,
           isExpanded: true,
-          items:
-              months
-                  .map(
-                    (m) => DropdownMenuItem<String>(value: m, child: Text(m)),
-                  )
-                  .toList(),
+          items: months
+              .map((m) => DropdownMenuItem<String>(value: m, child: Text(m)))
+              .toList(),
           onChanged: (val) {
             if (val != null && val != selectedMonth) {
               setState(() => selectedMonth = val);
@@ -279,20 +276,25 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
           ...list.asMap().entries.map((entry) {
             final index = entry.key;
             final notif = entry.value; // full notification map
-            return notificationCard(notif,index,title.toLowerCase());
+            return notificationCard(notif, index, title.toLowerCase());
           }),
       ],
     );
   }
 
   // 🔴 red: updated notificationCard with expandedKey & sender info
-  Widget notificationCard(Map<String, dynamic> notif, int index,String categoryParam) {
+  Widget notificationCard(
+    Map<String, dynamic> notif,
+    int index,
+    String categoryParam,
+  ) {
     final cardKey = "$categoryParam-$index"; // 🔴 unique key per notification
     final isExpanded = expandedKey == cardKey;
     final message = notif['message'] as String;
     final category = (notif['category'] as String).toLowerCase();
-    final senderName = notif['senderName'] ?? 'Unknown'; // 🔴 red: added senderName
-    final senderId = notif['senderId'] ?? ''; 
+    final senderName =
+        notif['senderName'] ?? 'Unknown'; // 🔴 red: added senderName
+    final senderId = notif['senderId'] ?? '';
 
     if (category.toLowerCase() == "sms") {
       return Container(
@@ -301,8 +303,8 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
           color: Colors.white,
           elevation: 2,
           child: InkWell(
-            onTap:
-                () => setState(() => expandedKey = isExpanded ? null : cardKey),
+            onTap: () =>
+                setState(() => expandedKey = isExpanded ? null : cardKey),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -325,10 +327,9 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
                           message,
                           style: const TextStyle(fontSize: 14),
                           maxLines: isExpanded ? null : 1,
-                          overflow:
-                              isExpanded
-                                  ? TextOverflow.visible
-                                  : TextOverflow.ellipsis,
+                          overflow: isExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
                         ),
                         if (isExpanded) const SizedBox(height: 8),
                         if (isExpanded)
@@ -356,8 +357,8 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap:
-              () => setState(() => expandedKey = isExpanded ? null : cardKey),
+          onTap: () =>
+              setState(() => expandedKey = isExpanded ? null : cardKey),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -371,10 +372,9 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
                         message,
                         style: const TextStyle(fontSize: 14),
                         maxLines: isExpanded ? null : 1,
-                        overflow:
-                            isExpanded
-                                ? TextOverflow.visible
-                                : TextOverflow.ellipsis,
+                        overflow: isExpanded
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                       ),
                       if (isExpanded) const SizedBox(height: 8),
                       if (isExpanded)
@@ -408,7 +408,6 @@ class _EmployeeNotificationsPageState extends State<EmployeeNotificationsPage> {
       ),
     );
   }
-  
 
   Widget _buildHeader() {
     return Container(

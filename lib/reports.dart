@@ -27,13 +27,12 @@ class PerformanceReview {
     return PerformanceReview(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
       reviewedBy: json['reviewedBy']?.toString() ?? 'Unknown',
-      reviewMonth:
-          json['reviewMonth'] != null
-              ? _monthName(
-                int.tryParse(json['reviewMonth'].toString()) ??
-                    DateTime.now().month,
-              )
-              : _monthName(DateTime.now().month),
+      reviewMonth: json['reviewMonth'] != null
+          ? _monthName(
+              int.tryParse(json['reviewMonth'].toString()) ??
+                  DateTime.now().month,
+            )
+          : _monthName(DateTime.now().month),
       flag: json['flag']?.toString() ?? '',
       status: json['status']?.toString() ?? 'Pending',
     );
@@ -67,20 +66,20 @@ class ReportsAnalyticsPage extends StatefulWidget {
 }
 
 class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
-  final String apiBase = 'http://localhost:5000';
+  final String apiBase = 'https://sabari2602.onrender.com';
   final String listPath = '/reports';
   final String detailsPath = '/reports';
 
   List<PerformanceReview> _reviews = [];
   bool _loadingList = true;
-   bool _dataFetched = false;
+  bool _dataFetched = false;
 
   int workProgress = 0;
   int leaveUsed = 0;
   String leavePercent = '0';
   String presentPercent = '100';
 
-@override
+  @override
   void initState() {
     super.initState();
     if (!_dataFetched) {
@@ -118,8 +117,9 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body.trim());
         setState(() {
-          _reviews =
-              data.map((item) => PerformanceReview.fromJson(item)).toList();
+          _reviews = data
+              .map((item) => PerformanceReview.fromJson(item))
+              .toList();
           _loadingList = false;
         });
       } else {
@@ -153,15 +153,16 @@ class _ReportsAnalyticsPageState extends State<ReportsAnalyticsPage> {
     }
     return null;
   }
-// ✅ Send decision helper
-Future<void> _sendDecision({
-  required String decision,
-  required String comment,
-  required Map<String, dynamic> reviewData,
-  required PerformanceReview review,
-}) async {
-  final userProvider = Provider.of<UserProvider>(context, listen: false);
-   final reviewedBy = review.reviewedBy.trim().toLowerCase();
+
+  // ✅ Send decision helper
+  Future<void> _sendDecision({
+    required String decision,
+    required String comment,
+    required Map<String, dynamic> reviewData,
+    required PerformanceReview review,
+  }) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final reviewedBy = review.reviewedBy.trim().toLowerCase();
 
     // Decide recipients based on who reviewed
     List<String> targets = [];
@@ -173,22 +174,22 @@ Future<void> _sendDecision({
       targets = [review.reviewedBy]; // fallback
     }
 
-  final body = json.encode({
-    "employeeId": userProvider.employeeId,
-    "employeeName": userProvider.employeeName,   // ✅ logged-in user name
-    "position": userProvider.position ?? "employee", // ✅ use login role
-    "decision": decision,
-    "comment": comment,
-    "sendTo": targets, 
-    "reviewId": review.id,
-  });
+    final body = json.encode({
+      "employeeId": userProvider.employeeId,
+      "employeeName": userProvider.employeeName, // ✅ logged-in user name
+      "position": userProvider.position ?? "employee", // ✅ use login role
+      "decision": decision,
+      "comment": comment,
+      "sendTo": targets,
+      "reviewId": review.id,
+    });
 
-  await http.post(
-    Uri.parse('$apiBase/review-decision'),
-    headers: {"Content-Type": "application/json"},
-    body: body,
-  );
-}
+    await http.post(
+      Uri.parse('$apiBase/review-decision'),
+      headers: {"Content-Type": "application/json"},
+      body: body,
+    );
+  }
 
   // ✅ Show review details with Agree & Disagree
   Future<void> _showReviewDetails(PerformanceReview review) async {
@@ -208,136 +209,135 @@ Future<void> _sendDecision({
 
       await showDialog(
         context: context,
-        builder:
-            (_) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        builder: (_) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 8,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: flagColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    height: 8,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: flagColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        topRight: Radius.circular(12),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Performance Review Details",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          "Performance Review Details",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _detailRow(
-                          "Employee ID",
-                          reviewData['empId'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow(
-                          "Employee Name",
-                          reviewData['empName'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow(
-                          "Communication",
-                          reviewData['communication'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow(
-                          "Attitude",
-                          reviewData['attitude'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow(
-                          "Technical Knowledge",
-                          reviewData['technicalKnowledge'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow(
-                          "Business",
-                          reviewData['business'],
-                          textColor: Colors.black,
-                        ),
-                        _detailRow("Flag", review.flag, textColor: flagColor),
-                        _detailRow(
-                          "Reviewed At",
-                          _formatDate(reviewedAt),
-                          textColor: Colors.black,
-                        ),
-                        const SizedBox(height: 16),
-                        if (!isFinal)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // ✅ Agree
-                              TextButton(
-                                onPressed: () async {
-                                  final comment = await _askComment(
-                                    "Reason for Agree (Optional)",
-                                  );
-                                  if (comment == null) return;
-
-                                  await _sendDecision(
-                                    decision: "agree",
-                                    comment: comment,
-                                    reviewData: reviewData,
-                                    review: review,
-                                  );
-
-                                  await fetchPerformanceReviews(); // ✅ refresh from backend
-                                  if (mounted) Navigator.pop(context);
-                                },
-                                child: const Text(
-                                  "Agree",
-                                  style: TextStyle(color: Colors.green),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // ❌ Disagree
-                              TextButton(
-                                onPressed: () async {
-                                  final comment = await _askComment(
-                                    "Reason for Disagree (Optional)",
-                                  );
-                                  if (comment == null) return;
-
-                                  await _sendDecision(
-                                    decision: "disagree",
-                                    comment: comment,
-                                    reviewData: reviewData,
-                                    review: review,
-                                  );
-
-                                  await fetchPerformanceReviews(); // ✅ refresh
-                                  if (mounted) Navigator.pop(context);
-                                },
-                                child: const Text(
-                                  "Disagree",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
+                    const SizedBox(height: 12),
+                    _detailRow(
+                      "Employee ID",
+                      reviewData['empId'],
+                      textColor: Colors.black,
                     ),
-                  ),
-                ],
+                    _detailRow(
+                      "Employee Name",
+                      reviewData['empName'],
+                      textColor: Colors.black,
+                    ),
+                    _detailRow(
+                      "Communication",
+                      reviewData['communication'],
+                      textColor: Colors.black,
+                    ),
+                    _detailRow(
+                      "Attitude",
+                      reviewData['attitude'],
+                      textColor: Colors.black,
+                    ),
+                    _detailRow(
+                      "Technical Knowledge",
+                      reviewData['technicalKnowledge'],
+                      textColor: Colors.black,
+                    ),
+                    _detailRow(
+                      "Business",
+                      reviewData['business'],
+                      textColor: Colors.black,
+                    ),
+                    _detailRow("Flag", review.flag, textColor: flagColor),
+                    _detailRow(
+                      "Reviewed At",
+                      _formatDate(reviewedAt),
+                      textColor: Colors.black,
+                    ),
+                    const SizedBox(height: 16),
+                    if (!isFinal)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          // ✅ Agree
+                          TextButton(
+                            onPressed: () async {
+                              final comment = await _askComment(
+                                "Reason for Agree (Optional)",
+                              );
+                              if (comment == null) return;
+
+                              await _sendDecision(
+                                decision: "agree",
+                                comment: comment,
+                                reviewData: reviewData,
+                                review: review,
+                              );
+
+                              await fetchPerformanceReviews(); // ✅ refresh from backend
+                              if (mounted) Navigator.pop(context);
+                            },
+                            child: const Text(
+                              "Agree",
+                              style: TextStyle(color: Colors.green),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // ❌ Disagree
+                          TextButton(
+                            onPressed: () async {
+                              final comment = await _askComment(
+                                "Reason for Disagree (Optional)",
+                              );
+                              if (comment == null) return;
+
+                              await _sendDecision(
+                                decision: "disagree",
+                                comment: comment,
+                                reviewData: reviewData,
+                                review: review,
+                              );
+
+                              await fetchPerformanceReviews(); // ✅ refresh
+                              if (mounted) Navigator.pop(context);
+                            },
+                            child: const Text(
+                              "Disagree",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
+          ),
+        ),
       );
     }
   }
@@ -347,31 +347,30 @@ Future<void> _sendDecision({
     TextEditingController controller = TextEditingController();
     return await showDialog<String>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: Text(title),
-            content: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: "Enter comment (optional)",
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, null),
-                child: const Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, controller.text.trim()),
-                child: const Text("Submit"),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: "Enter comment (optional)",
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text("Submit"),
+          ),
+        ],
+      ),
     );
   }
 
   // ---------------- Fetch stats ----------------
- Future<void> fetchWorkProgress(String empId) async {
+  Future<void> fetchWorkProgress(String empId) async {
     var url = Uri.parse('$apiBase/todo_planner/todo/progress/$empId');
     try {
       var response = await http.get(url);
@@ -384,7 +383,7 @@ Future<void> _sendDecision({
     } catch (_) {}
   }
 
- Future<void> fetchLeaveStats(String empId) async {
+  Future<void> fetchLeaveStats(String empId) async {
     var url = Uri.parse('$apiBase/apply/leave-balance/$empId');
     try {
       var response = await http.get(url);
@@ -404,8 +403,9 @@ Future<void> _sendDecision({
               (balances['sick']?['total'] ?? 0) +
               (balances['sad']?['total'] ?? 0);
 
-          double percent =
-              totalLeaves > 0 ? (leaveUsed / totalLeaves) * 100 : 0;
+          double percent = totalLeaves > 0
+              ? (leaveUsed / totalLeaves) * 100
+              : 0;
           leavePercent = percent.toStringAsFixed(0);
           presentPercent = (100 - percent).toStringAsFixed(0);
         });
@@ -471,12 +471,11 @@ Future<void> _sendDecision({
 
   Widget reportCard(String title, String percentText, String details) {
     double percent = double.tryParse(percentText.replaceAll('%', '')) ?? 0;
-    Color color =
-        percent >= 80
-            ? Colors.green
-            : percent >= 50
-            ? Colors.orange
-            : Colors.red;
+    Color color = percent >= 80
+        ? Colors.green
+        : percent >= 50
+        ? Colors.orange
+        : Colors.red;
 
     return Column(
       children: [
@@ -605,7 +604,7 @@ Future<void> _sendDecision({
     );
   }
 
-   // ✅ Flag cell with icon + color
+  // ✅ Flag cell with icon + color
   Widget buildFlagCell(String? flagValue) {
     String flag = (flagValue ?? '').toLowerCase();
     Color color;
@@ -662,15 +661,15 @@ Future<void> _sendDecision({
     );
   }
 
-String _formatDate(dynamic iso) {
-  if (iso == null) return 'N/A';
-  try {
-    final dt = DateTime.parse(iso.toString()).toLocal();
-    return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
-  } catch (_) {
-    return iso.toString();
+  String _formatDate(dynamic iso) {
+    if (iso == null) return 'N/A';
+    try {
+      final dt = DateTime.parse(iso.toString()).toLocal();
+      return DateFormat('yyyy-MM-dd hh:mm a').format(dt); // 2025-10-03 12:09 PM
+    } catch (_) {
+      return iso.toString();
+    }
   }
-}
 
   void _showSnack(String msg) {
     if (!mounted) return;

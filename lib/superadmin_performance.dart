@@ -1,4 +1,4 @@
-//superadmin_performance.dart                 
+//superadmin_performance.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -24,7 +24,6 @@ class _SuperadminPerformancePageState extends State<SuperadminPerformancePage> {
     "ZeAI102": "Nivitha S",
     "ZeAI112": "Hemeswari D",
     "ZeAI115": "Srivatsini R",
-
   };
   late final Map<String, String> nameToIdMap;
 
@@ -82,7 +81,7 @@ class _SuperadminPerformancePageState extends State<SuperadminPerformancePage> {
       return;
     }
 
-    final url = Uri.parse('http://localhost:5000/reviews');
+    final url = Uri.parse('https://sabari2602.onrender.com/reviews');
     setState(() => _isloading = true);
 
     final reviewerName =
@@ -118,7 +117,9 @@ class _SuperadminPerformancePageState extends State<SuperadminPerformancePage> {
 
         // 🔔 Add notifications (one for employee, one for admin)
         String currentMonth = getCurrentMonth();
-        final notifUrl = Uri.parse("http://localhost:5000/notifications");
+        final notifUrl = Uri.parse(
+          "https://sabari2602.onrender.com/notifications",
+        );
         final userProvider = Provider.of<UserProvider>(context, listen: false);
         final adminId = userProvider.employeeId ?? 'superadmin';
         final adminName = userProvider.employeeName ?? 'Super Admin';

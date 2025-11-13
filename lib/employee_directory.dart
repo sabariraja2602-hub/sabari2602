@@ -28,7 +28,7 @@ class EmployeeDirectoryPageState extends State<EmployeeDirectoryPage> {
   Future<void> fetchEmployees() async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/api/employees"),
+        Uri.parse("https://sabari2602.onrender.com/api/employees"),
       );
 
       if (response.statusCode == 200) {
@@ -93,8 +93,9 @@ class EmployeeDirectoryPageState extends State<EmployeeDirectoryPage> {
                         final emp = employees[index];
                         //final profile = emp['photo']; // 🔹 backend field
                         final imageUrl =
-                            (emp['employeeImage'] != null && emp['employeeImage'].isNotEmpty)
-                            ? "http://localhost:5000${emp['employeeImage']}"
+                            (emp['employeeImage'] != null &&
+                                emp['employeeImage'].isNotEmpty)
+                            ? "https://sabari2602.onrender.com${emp['employeeImage']}"
                             : "";
                         return _employeeCard(
                           emp['employeeId'] ?? "", // ✅ pass employeeId also
@@ -200,48 +201,54 @@ class EmployeeDirectoryPageState extends State<EmployeeDirectoryPage> {
                     Icons.phone,
                     size: 25,
                     color: Colors.deepPurple,
-                   ),
-                   onPressed: () {
-                         // TODO: replace with your logged-in employee id retrieval
-                     //  const currentUserId = "EMPID"; // <<--- get from Provider / auth
-                     final currentUserId = Provider.of<UserProvider>(context, listen: false).employeeId!;
-                       Navigator.push(
-                         context,
-                         MaterialPageRoute(
-                            builder: (context) => AudioCallPage(
-                              currentUserId: currentUserId,
-                              targetUserId: employeeId,
-                              isCaller: true,
-                              isVideo: false,
-                            ),
-                         ),
-                       );
-                   },
+                  ),
+                  onPressed: () {
+                    // TODO: replace with your logged-in employee id retrieval
+                    //  const currentUserId = "EMPID"; // <<--- get from Provider / auth
+                    final currentUserId = Provider.of<UserProvider>(
+                      context,
+                      listen: false,
+                    ).employeeId!;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AudioCallPage(
+                          currentUserId: currentUserId,
+                          targetUserId: employeeId,
+                          isCaller: true,
+                          isVideo: false,
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
-IconButton(
-  icon: const Icon(
-    Icons.video_call,
-    size: 25,
-    color: Colors.deepPurple,
-            ),
-              onPressed: () {
-                 // TODO: replace with your logged-in employee id retrieval
-               //const currentUserId = "EMPID"; // <<--- get from Provider / auth
-               final currentUserId = Provider.of<UserProvider>(context, listen: false).employeeId!;
-               Navigator.push(
-                 context,
-                 MaterialPageRoute(
-                   builder: (context) => AudioCallPage(
-                     currentUserId: currentUserId,
-                     targetUserId: employeeId,
-                     isCaller: true,
-                     isVideo: true,
-                   ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.video_call,
+                    size: 25,
+                    color: Colors.deepPurple,
                   ),
-                 );
-                },
-               ),
+                  onPressed: () {
+                    // TODO: replace with your logged-in employee id retrieval
+                    //const currentUserId = "EMPID"; // <<--- get from Provider / auth
+                    final currentUserId = Provider.of<UserProvider>(
+                      context,
+                      listen: false,
+                    ).employeeId!;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AudioCallPage(
+                          currentUserId: currentUserId,
+                          targetUserId: employeeId,
+                          isCaller: true,
+                          isVideo: true,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ],

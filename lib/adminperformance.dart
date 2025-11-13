@@ -26,8 +26,7 @@ class _PerformanceReviewPageState extends State<PerformanceReviewPage> {
     "ZeAI116": "Gowsalya S",
     "ZeAI124": "Manojkumar",
     "ZeAI134": "SabariRaja R",
-     "ZeAI129": "Michael A",
-    
+    "ZeAI129": "Michael A",
   };
   late final Map<String, String> nameToIdMap;
 
@@ -85,7 +84,7 @@ class _PerformanceReviewPageState extends State<PerformanceReviewPage> {
       return;
     }
 
-    final url = Uri.parse('http://localhost:5000/reviews');
+    final url = Uri.parse('https://sabari2602.onrender.com/reviews');
     // ignore: unnecessary_null_comparison
     setState(() => _isloading = true);
 
@@ -122,7 +121,9 @@ class _PerformanceReviewPageState extends State<PerformanceReviewPage> {
 
         // 🔔 Add notifications (one for employee, one for admin)
         String currentMonth = getCurrentMonth();
-        final notifUrl = Uri.parse("http://localhost:5000/notifications");
+        final notifUrl = Uri.parse(
+          "https://sabari2602.onrender.com/notifications",
+        );
         final userProvider = Provider.of<UserProvider>(context, listen: false);
         final adminId = userProvider.employeeId ?? 'admin';
         final adminName = userProvider.employeeName ?? 'Admin';
@@ -438,7 +439,6 @@ class _PerformanceReviewPageState extends State<PerformanceReviewPage> {
               .toList(),
           onChanged: enabled ? onChanged : null,
         ),
-        
       ),
     );
   }

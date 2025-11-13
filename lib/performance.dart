@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,7 +22,9 @@ class _PerformanceState extends State<Performance> {
   }
 
   Future<void> fetchPerformanceData() async {
-    var url = Uri.parse('http://localhost:5000/perform/performance/all');
+    var url = Uri.parse(
+      'https://sabari2602.onrender.com/perform/performance/all',
+    );
 
     try {
       var response = await http.get(url);
@@ -54,13 +55,13 @@ class _PerformanceState extends State<Performance> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMsg.isNotEmpty
-              ? Center(child: Text(errorMsg))
-              : ListView.builder(
-                  itemCount: performanceData.length,
-                  itemBuilder: (context, index) {
-                    return buildPerformanceCard(performanceData[index]);
-                  },
-                ),
+          ? Center(child: Text(errorMsg))
+          : ListView.builder(
+              itemCount: performanceData.length,
+              itemBuilder: (context, index) {
+                return buildPerformanceCard(performanceData[index]);
+              },
+            ),
     );
   }
 
@@ -87,7 +88,11 @@ class _PerformanceState extends State<Performance> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(color: Colors.grey.shade300, blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -110,7 +115,10 @@ class _PerformanceState extends State<Performance> {
               children: [
                 Text(
                   '${data['employeeName']} - ${data['month']}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Divider(),
 
@@ -120,7 +128,10 @@ class _PerformanceState extends State<Performance> {
                 buildSection('Business Knowledge', data['businessKnowledge']),
 
                 const SizedBox(height: 10),
-                Text('Overall Comment:\n${data['overallComment']}', style: const TextStyle(fontSize: 14)),
+                Text(
+                  'Overall Comment:\n${data['overallComment']}',
+                  style: const TextStyle(fontSize: 14),
+                ),
                 const SizedBox(height: 6),
                 Text('Reviewed by: ${data['reviewer']}'),
               ],
@@ -137,10 +148,7 @@ class _PerformanceState extends State<Performance> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(content),
         ],

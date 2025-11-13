@@ -17,27 +17,30 @@ class _PostPerformancePageState extends State<PostPerformancePage> {
   final TextEditingController communicationController = TextEditingController();
   final TextEditingController attitudeController = TextEditingController();
   final TextEditingController techKnowledgeController = TextEditingController();
-  final TextEditingController businessKnowledgeController = TextEditingController();
-  final TextEditingController overallCommentController = TextEditingController();
+  final TextEditingController businessKnowledgeController =
+      TextEditingController();
+  final TextEditingController overallCommentController =
+      TextEditingController();
   final TextEditingController reviewerController = TextEditingController();
 
-  String overallStatus = 'Green';  // ✅ Default overall color status
+  String overallStatus = 'Green'; // ✅ Default overall color status
 
   Future<void> postPerformance() async {
-    var url = Uri.parse('http://localhost:5000/perform/performance/save');
+    var url = Uri.parse(
+      'https://sabari2602.onrender.com/perform/performance/save',
+    );
 
     var body = jsonEncode({
       "employeeId": employeeIdController.text,
       "employeeName": employeeNameController.text,
       "month": monthController.text,
-      "overallStatus": overallStatus,  // ✅ Send selected color
+      "overallStatus": overallStatus, // ✅ Send selected color
       "communication": communicationController.text,
       "attitude": attitudeController.text,
       "technicalKnowledge": techKnowledgeController.text,
       "businessKnowledge": businessKnowledgeController.text,
       "overallComment": overallCommentController.text,
       "reviewer": reviewerController.text,
-      
     });
 
     try {
@@ -53,9 +56,9 @@ class _PostPerformancePageState extends State<PostPerformancePage> {
         );
         clearFields();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: ${response.body}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('❌ Error: ${response.body}')));
       }
     } catch (e) {
       print('❌ Error posting performance: $e');
@@ -84,15 +87,48 @@ class _PostPerformancePageState extends State<PostPerformancePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(controller: employeeIdController, decoration: const InputDecoration(labelText: 'Employee ID')),
-            TextField(controller: employeeNameController, decoration: const InputDecoration(labelText: 'Employee Name')),
-            TextField(controller: monthController, decoration: const InputDecoration(labelText: 'Month (eg: June 2025)')),
-            TextField(controller: communicationController, decoration: const InputDecoration(labelText: 'Communication')),
-            TextField(controller: attitudeController, decoration: const InputDecoration(labelText: 'Attitude')),
-            TextField(controller: techKnowledgeController, decoration: const InputDecoration(labelText: 'Technical Knowledge')),
-            TextField(controller: businessKnowledgeController, decoration: const InputDecoration(labelText: 'Business Knowledge')),
-            TextField(controller: overallCommentController, decoration: const InputDecoration(labelText: 'Overall Comment')),
-            TextField(controller: reviewerController, decoration: const InputDecoration(labelText: 'Reviewer')),
+            TextField(
+              controller: employeeIdController,
+              decoration: const InputDecoration(labelText: 'Employee ID'),
+            ),
+            TextField(
+              controller: employeeNameController,
+              decoration: const InputDecoration(labelText: 'Employee Name'),
+            ),
+            TextField(
+              controller: monthController,
+              decoration: const InputDecoration(
+                labelText: 'Month (eg: June 2025)',
+              ),
+            ),
+            TextField(
+              controller: communicationController,
+              decoration: const InputDecoration(labelText: 'Communication'),
+            ),
+            TextField(
+              controller: attitudeController,
+              decoration: const InputDecoration(labelText: 'Attitude'),
+            ),
+            TextField(
+              controller: techKnowledgeController,
+              decoration: const InputDecoration(
+                labelText: 'Technical Knowledge',
+              ),
+            ),
+            TextField(
+              controller: businessKnowledgeController,
+              decoration: const InputDecoration(
+                labelText: 'Business Knowledge',
+              ),
+            ),
+            TextField(
+              controller: overallCommentController,
+              decoration: const InputDecoration(labelText: 'Overall Comment'),
+            ),
+            TextField(
+              controller: reviewerController,
+              decoration: const InputDecoration(labelText: 'Reviewer'),
+            ),
 
             const SizedBox(height: 16),
 

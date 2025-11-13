@@ -16,14 +16,18 @@ class LeaveHistoryCancelled extends StatefulWidget {
 class _LeaveHistoryCancelledState extends State<LeaveHistoryCancelled> {
   Future<List<Map<String, dynamic>>>? _cancelledLeavesFuture;
 
-  static const String baseUrl = 'http://localhost:5000/apply/cancelled';
+  static const String baseUrl =
+      'https://sabari2602.onrender.com/apply/cancelled';
 
   @override
   void initState() {
     super.initState();
     // Safe to read Provider in post-frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final employeeId = Provider.of<UserProvider>(context, listen: false).employeeId;
+      final employeeId = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).employeeId;
       if (employeeId != null && employeeId.isNotEmpty) {
         setState(() {
           _cancelledLeavesFuture = fetchCancelledLeaves(employeeId);
@@ -32,37 +36,37 @@ class _LeaveHistoryCancelledState extends State<LeaveHistoryCancelled> {
     });
   }
 
-  Future<List<Map<String, dynamic>>> fetchCancelledLeaves(String employeeId) async {
-  final response = await http.get(Uri.parse('$baseUrl/$employeeId'));
+  Future<List<Map<String, dynamic>>> fetchCancelledLeaves(
+    String employeeId,
+  ) async {
+    final response = await http.get(Uri.parse('$baseUrl/$employeeId'));
 
-  if (response.statusCode == 200) {
-    final decoded = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
 
-    if (decoded is List) {
-      // backend returned a raw list
-      return decoded.cast<Map<String, dynamic>>();
-    } else if (decoded is Map && decoded['items'] != null) {
-      // backend returned an object with items key
-      return (decoded['items'] as List).cast<Map<String, dynamic>>();
+      if (decoded is List) {
+        // backend returned a raw list
+        return decoded.cast<Map<String, dynamic>>();
+      } else if (decoded is Map && decoded['items'] != null) {
+        // backend returned an object with items key
+        return (decoded['items'] as List).cast<Map<String, dynamic>>();
+      } else {
+        throw Exception("Unexpected response format: $decoded");
+      }
     } else {
-      throw Exception("Unexpected response format: $decoded");
+      throw Exception('Failed to load cancelled leaves');
     }
-  } else {
-    throw Exception('Failed to load cancelled leaves');
   }
-}
-
 
   String formatDate(String? dateStr) {
-  if (dateStr == null || dateStr.isEmpty) return '';
-  try {
-    final parsedDate = DateTime.parse(dateStr).toLocal();
-    return DateFormat('yyyy-M-d').format(parsedDate); // 👈 match other pages
-  } catch (e) {
-    return dateStr;
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parsedDate = DateTime.parse(dateStr).toLocal();
+      return DateFormat('yyyy-M-d').format(parsedDate); // 👈 match other pages
+    } catch (e) {
+      return dateStr;
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +99,9 @@ class _LeaveHistoryCancelledState extends State<LeaveHistoryCancelled> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No cancelled leave history found.'));
+                    return const Center(
+                      child: Text('No cancelled leave history found.'),
+                    );
                   } else {
                     return _buildLeaveTable(snapshot.data!);
                   }
@@ -112,18 +118,45 @@ class _LeaveHistoryCancelledState extends State<LeaveHistoryCancelled> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width),
+        constraints: BoxConstraints(
+          minWidth: MediaQuery.of(context).size.width,
+        ),
         child: DataTable(
           columnSpacing: 20,
           headingRowColor: WidgetStateProperty.all(Colors.white),
           dataRowColor: WidgetStateProperty.all(Colors.white),
           border: TableBorder.all(width: 1, color: Colors.grey.shade300),
           columns: const [
-            DataColumn(label: Text('Leave Type', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('From Date', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('To Date', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Reason', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+              label: Text(
+                'Leave Type',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'From Date',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'To Date',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Reason',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Status',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
           rows: leaves.map((leave) {
             return DataRow(

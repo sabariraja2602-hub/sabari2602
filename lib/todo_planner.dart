@@ -22,9 +22,16 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
   final Map<String, List<Map<String, String>>> _tasksByDate = {};
 
   final statusOptions = ['Yet to start', 'In progress', 'Completed'];
-  final workStatusOptions = ['WFH', 'WFO', 'Casual leave', 'Sick leave', 'Sad leave', 'Holiday'];
+  final workStatusOptions = [
+    'WFH',
+    'WFO',
+    'Casual leave',
+    'Sick leave',
+    'Sad leave',
+    'Holiday',
+  ];
 
-  final String baseUrl = 'http://localhost:5000/todo_planner';
+  final String baseUrl = 'https://sabari2602.onrender.com/todo_planner';
 
   @override
   void initState() {
@@ -47,11 +54,13 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
           _tasksByDate.clear();
           data.forEach((date, taskData) {
             _tasksByDate[date] = (taskData['tasks'] as List)
-                .map<Map<String, String>>((e) => {
-                      'item': e['item']?.toString() ?? '',
-                      'eta': e['eta']?.toString() ?? '',
-                      'status': e['status']?.toString() ?? '',
-                    })
+                .map<Map<String, String>>(
+                  (e) => {
+                    'item': e['item']?.toString() ?? '',
+                    'eta': e['eta']?.toString() ?? '',
+                    'status': e['status']?.toString() ?? '',
+                  },
+                )
                 .toList();
           });
         });
@@ -76,11 +85,13 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
         setState(() {
           _currentTaskData = data;
           _tasksByDate[date] = (data['tasks'] as List)
-              .map<Map<String, String>>((e) => {
-                    'item': e['item']?.toString() ?? '',
-                    'eta': e['eta']?.toString() ?? '',
-                    'status': e['status']?.toString() ?? '',
-                  })
+              .map<Map<String, String>>(
+                (e) => {
+                  'item': e['item']?.toString() ?? '',
+                  'eta': e['eta']?.toString() ?? '',
+                  'status': e['status']?.toString() ?? '',
+                },
+              )
               .toList();
         });
       } else {
@@ -136,15 +147,17 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
 
     if (isEdit && _currentTaskData != null) {
       workItems = List<Map<String, String>>.from(
-        (_currentTaskData!['tasks'] as List).map<Map<String, String>>((e) => {
-              'item': e['item'].toString(),
-              'eta': e['eta'].toString(),
-              'status': e['status'].toString(),
-            }),
+        (_currentTaskData!['tasks'] as List).map<Map<String, String>>(
+          (e) => {
+            'item': e['item'].toString(),
+            'eta': e['eta'].toString(),
+            'status': e['status'].toString(),
+          },
+        ),
       );
     } else {
       workItems = [
-        {'item': '', 'eta': '', 'status': ''}
+        {'item': '', 'eta': '', 'status': ''},
       ];
     }
 
@@ -157,7 +170,9 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
       isScrollControlled: true,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: StatefulBuilder(
             builder: (context, setModalState) => SingleChildScrollView(
               child: Padding(
@@ -165,18 +180,24 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${isEdit ? 'Edit' : 'Add'} Tasks',
-                        style: const TextStyle(color: Colors.white)),
+                    Text(
+                      '${isEdit ? 'Edit' : 'Add'} Tasks',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       value: selectedWorkStatus,
                       dropdownColor: Colors.black,
                       items: workStatusOptions
-                          .map((e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(e,
-                                    style: const TextStyle(color: Colors.white)),
-                              ))
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(
+                                e,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          )
                           .toList(),
                       onChanged: (val) =>
                           setModalState(() => selectedWorkStatus = val!),
@@ -210,18 +231,26 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
                           ),
                           DropdownButtonFormField<String>(
                             dropdownColor: Colors.black,
-                          value: workItems[index]['status']?.isNotEmpty == true
+                            value:
+                                workItems[index]['status']?.isNotEmpty == true
                                 ? workItems[index]['status']
                                 : null,
                             items: statusOptions
-                                .map((e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e,
-                                          style: const TextStyle(color: Colors.white)),
-                                    ))
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(
+                                      e,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
                                 .toList(),
-                            onChanged: (val) =>
-                                setModalState(() => workItems[index]['status'] = val!),
+                            onChanged: (val) => setModalState(
+                              () => workItems[index]['status'] = val!,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'Status',
                               labelStyle: TextStyle(color: Colors.white),
@@ -238,12 +267,21 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
                     const SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: () async {
-                        if (workItems.every((task) =>
-                            task['item']!.isNotEmpty &&
-                            task['eta']!.isNotEmpty &&
-                            task['status']!.isNotEmpty)) {
-                          String dateStr = date.toIso8601String().split('T').first;
-                          await _saveTask(dateStr, selectedWorkStatus, workItems);
+                        if (workItems.every(
+                          (task) =>
+                              task['item']!.isNotEmpty &&
+                              task['eta']!.isNotEmpty &&
+                              task['status']!.isNotEmpty,
+                        )) {
+                          String dateStr = date
+                              .toIso8601String()
+                              .split('T')
+                              .first;
+                          await _saveTask(
+                            dateStr,
+                            selectedWorkStatus,
+                            workItems,
+                          );
                           Navigator.pop(context);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -267,7 +305,8 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
   }
 
   Widget _buildTaskBox() {
-    if (_selectedDay == null || _currentTaskData == null) return const SizedBox();
+    if (_selectedDay == null || _currentTaskData == null)
+      return const SizedBox();
 
     final selectedDateStr = _selectedDay!.toIso8601String().split('T').first;
     final todayStr = DateTime.now().toIso8601String().split('T').first;
@@ -292,14 +331,19 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Work Status: ${data['workStatus']}',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Work Status: ${data['workStatus']}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          ...List<Map<String, dynamic>>.from(data['tasks']).map((task) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                    '• ${task['item']} | ETA: ${task['eta']} | Status: ${task['status']}'),
-              )),
+          ...List<Map<String, dynamic>>.from(data['tasks']).map(
+            (task) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                '• ${task['item']} | ETA: ${task['eta']} | Status: ${task['status']}',
+              ),
+            ),
+          ),
           if (isTodayOrFuture)
             Align(
               alignment: Alignment.bottomRight,
@@ -337,12 +381,16 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
                   _focusedDay = focusedDay;
                 });
 
-                final selectedDateStr =
-                    selectedDay.toIso8601String().split('T').first;
+                final selectedDateStr = selectedDay
+                    .toIso8601String()
+                    .split('T')
+                    .first;
                 await _fetchTask(selectedDateStr);
 
-                final todayStr =
-                    DateTime.now().toIso8601String().split('T').first;
+                final todayStr = DateTime.now()
+                    .toIso8601String()
+                    .split('T')
+                    .first;
                 if (selectedDateStr.compareTo(todayStr) >= 0 &&
                     _currentTaskData == null) {
                   _showAddOrEditDialog(selectedDay, isEdit: false);
@@ -352,16 +400,23 @@ class _ToDoPlannerState extends State<ToDoPlanner> {
                 defaultTextStyle: TextStyle(color: Colors.white),
                 weekendTextStyle: TextStyle(color: Colors.white),
                 selectedDecoration: BoxDecoration(
-                    color: Colors.purple, shape: BoxShape.circle),
+                  color: Colors.purple,
+                  shape: BoxShape.circle,
+                ),
                 todayDecoration: BoxDecoration(
-                    color: Colors.deepPurple, shape: BoxShape.circle),
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
+                ),
               ),
               headerStyle: const HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
                 titleTextStyle: TextStyle(color: Colors.white, fontSize: 18),
                 leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
-                rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
+                rightChevronIcon: Icon(
+                  Icons.chevron_right,
+                  color: Colors.white,
+                ),
               ),
               eventLoader: _getEventsForDay,
               calendarBuilders: CalendarBuilders(

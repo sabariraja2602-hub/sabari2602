@@ -37,14 +37,12 @@ class _PayslipScreenState extends State<PayslipScreen> {
   ];
   final List<String> _years = ['2024', '2025'];
 
- late String selectedMonth;
+  late String selectedMonth;
   late String selectedYear;
 
   Map<String, dynamic> earnings = {};
   Map<String, dynamic> deductions = {};
   Map<String, dynamic> employeeData = {};
-
-  
 
   @override
   void initState() {
@@ -67,7 +65,8 @@ class _PayslipScreenState extends State<PayslipScreen> {
   }
 
   Future<void> fetchWorkingDaysForPayslip() async {
-    final employeeId = Provider.of<UserProvider>(context, listen: false).employeeId ?? '';
+    final employeeId =
+        Provider.of<UserProvider>(context, listen: false).employeeId ?? '';
     final now = DateTime.now();
     workingDays = await fetchWorkingDays(employeeId, now.month, now.year);
     setState(() {
@@ -76,7 +75,9 @@ class _PayslipScreenState extends State<PayslipScreen> {
   }
 
   Future<int> fetchWorkingDays(String employeeId, int month, int year) async {
-    var url = Uri.parse("http://localhost:5000/attendance/attendance/history/$employeeId");
+    var url = Uri.parse(
+      "https://sabari2602.onrender.com/attendance/attendance/history/$employeeId",
+    );
     var response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -113,7 +114,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
     }
 
     final url = Uri.parse(
-      'http://localhost:5000/get-payslip-details?employee_id=$employeeId&year=$selectedYear&month=$selectedMonth',
+      'https://sabari2602.onrender.com/get-payslip-details?employee_id=$employeeId&year=$selectedYear&month=$selectedMonth',
     );
 
     try {
@@ -132,14 +133,24 @@ class _PayslipScreenState extends State<PayslipScreen> {
           }
         }
         // 👇 If backend didn't send workdays, calculate from attendance
-      int noOfWorkdays = int.tryParse(data['no_of_workdays']?.toString() ?? '0') ?? 0;
-      if (noOfWorkdays == 0) {
-        final monthIndex = _months.indexOf(selectedMonth) + 1;
-        noOfWorkdays = await fetchWorkingDays(employeeId, monthIndex, int.parse(selectedYear));
+        int noOfWorkdays =
+            int.tryParse(data['no_of_workdays']?.toString() ?? '0') ?? 0;
+        if (noOfWorkdays == 0) {
+          final monthIndex = _months.indexOf(selectedMonth) + 1;
+          noOfWorkdays = await fetchWorkingDays(
+            employeeId,
+            monthIndex,
+            int.parse(selectedYear),
+          );
 
-        // Optionally update backend payslip with correct workdays
-        await _updateWorkdaysInBackend(employeeId, selectedYear, selectedMonth, noOfWorkdays);
-      }
+          // Optionally update backend payslip with correct workdays
+          await _updateWorkdaysInBackend(
+            employeeId,
+            selectedYear,
+            selectedMonth,
+            noOfWorkdays,
+          );
+        }
 
         setState(() {
           earnings = data['earnings'] ?? {};
@@ -167,31 +178,37 @@ class _PayslipScreenState extends State<PayslipScreen> {
       print("❌ Network error: $e");
     }
   }
+
   Future<void> _updateWorkdaysInBackend(
-    String employeeId, String year, String month, int workdays) async {
-  try {
-    final url = Uri.parse("http://localhost:5000/payslip/update-workdays");
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "employee_id": employeeId,
-        "year": year,
-        "month": month,
-        "no_of_workdays": workdays,
-      }),
-    );
+    String employeeId,
+    String year,
+    String month,
+    int workdays,
+  ) async {
+    try {
+      final url = Uri.parse(
+        "https://sabari2602.onrender.com/payslip/update-workdays",
+      );
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "employee_id": employeeId,
+          "year": year,
+          "month": month,
+          "no_of_workdays": workdays,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      print("✅ Workdays updated in backend");
-    } else {
-      print("❌ Failed to update backend: ${response.body}");
+      if (response.statusCode == 200) {
+        print("✅ Workdays updated in backend");
+      } else {
+        print("❌ Failed to update backend: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Error updating backend: $e");
     }
-  } catch (e) {
-    print("❌ Error updating backend: $e");
   }
-}
-
 
   Future<void> _generatePdf() async {
     // final employeeId = Provider.of<UserProvider>(context, listen: false).employeeId ?? '';
@@ -222,7 +239,9 @@ class _PayslipScreenState extends State<PayslipScreen> {
                       pw.Text(
                         "ZeAI Soft",
                         style: pw.TextStyle(
-                            fontSize: 14, fontWeight: pw.FontWeight.bold),
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                       pw.Text(
                         "3rd Floor,SKCL Tech Square,Lazer St,South Phase",
@@ -237,7 +256,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
                         style: pw.TextStyle(fontSize: 10),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
               pw.Divider(thickness: 1),
@@ -248,80 +267,111 @@ class _PayslipScreenState extends State<PayslipScreen> {
                 child: pw.Text(
                   'Payslip for $selectedMonth $selectedYear',
                   style: pw.TextStyle(
-                      fontSize: 14, fontWeight: pw.FontWeight.bold),
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
               ),
               pw.SizedBox(height: 10),
 
               // Employee Details
-              pw.Text('Employee Details',
-                  style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold, fontSize: 12)),
+              pw.Text(
+                'Employee Details',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
               pw.SizedBox(height: 5),
               pw.Table(
                 border: pw.TableBorder.all(width: 0.5, color: PdfColors.grey),
                 children: [
-                  _detailRow('Employee Name', employeeData['employee_name'],
-                      'Employee ID', employeeData['employee_id']),
-                  _detailRow('Date of Joining', employeeData['date_of_joining'],
-                      'Bank Name', employeeData['bank_name']),
-                  _detailRow('Designation', employeeData['designation'],
-                      'Account No', employeeData['account_no']),
-                  _detailRow('Location', employeeData['location'],
-                      'UAN', employeeData['uan']),
-                  _detailRow('No.Of Days Worked', employeeData['no_of_workdays'], 'ESIC No',
-                      employeeData['esic_no']),
-                  _detailRow('PAN', employeeData['pan'], 'LOP',
-                      employeeData['lop']),
-                 
+                  _detailRow(
+                    'Employee Name',
+                    employeeData['employee_name'],
+                    'Employee ID',
+                    employeeData['employee_id'],
+                  ),
+                  _detailRow(
+                    'Date of Joining',
+                    employeeData['date_of_joining'],
+                    'Bank Name',
+                    employeeData['bank_name'],
+                  ),
+                  _detailRow(
+                    'Designation',
+                    employeeData['designation'],
+                    'Account No',
+                    employeeData['account_no'],
+                  ),
+                  _detailRow(
+                    'Location',
+                    employeeData['location'],
+                    'UAN',
+                    employeeData['uan'],
+                  ),
+                  _detailRow(
+                    'No.Of Days Worked',
+                    employeeData['no_of_workdays'],
+                    'ESIC No',
+                    employeeData['esic_no'],
+                  ),
+                  _detailRow(
+                    'PAN',
+                    employeeData['pan'],
+                    'LOP',
+                    employeeData['lop'],
+                  ),
                 ],
               ),
               pw.SizedBox(height: 12),
 
               // Earnings + Deductions in single table
-pw.Table(
-  border: pw.TableBorder.all(width: 0.5, color: PdfColors.grey),
-  children: [
-    pw.TableRow(
-      decoration: pw.BoxDecoration(color: PdfColor.fromHex('#9F71F8')),
-      children: [
-        _cell('Earning'),
-        _cell('Amount (Rs)'),
-        _cell('Deduction'),
-        _cell('Amount (Rs)'),
-      ],
-    ),
-    ...List.generate(
-      // Max rows = larger of earnings/deductions length
-      (earnings.length > deductions.length
-          ? earnings.length
-          : deductions.length),
-      (index) {
-        final earningKey = index < earnings.keys.length
-            ? earnings.keys.elementAt(index)
-            : '';
-        final earningValue = index < earnings.values.length
-            ? earnings.values.elementAt(index).toString()
-            : '';
-        final deductionKey = index < deductions.keys.length
-            ? deductions.keys.elementAt(index)
-            : '';
-        final deductionValue = index < deductions.values.length
-            ? deductions.values.elementAt(index).toString()
-            : '';
+              pw.Table(
+                border: pw.TableBorder.all(width: 0.5, color: PdfColors.grey),
+                children: [
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: PdfColor.fromHex('#9F71F8'),
+                    ),
+                    children: [
+                      _cell('Earning'),
+                      _cell('Amount (Rs)'),
+                      _cell('Deduction'),
+                      _cell('Amount (Rs)'),
+                    ],
+                  ),
+                  ...List.generate(
+                    // Max rows = larger of earnings/deductions length
+                    (earnings.length > deductions.length
+                        ? earnings.length
+                        : deductions.length),
+                    (index) {
+                      final earningKey = index < earnings.keys.length
+                          ? earnings.keys.elementAt(index)
+                          : '';
+                      final earningValue = index < earnings.values.length
+                          ? earnings.values.elementAt(index).toString()
+                          : '';
+                      final deductionKey = index < deductions.keys.length
+                          ? deductions.keys.elementAt(index)
+                          : '';
+                      final deductionValue = index < deductions.values.length
+                          ? deductions.values.elementAt(index).toString()
+                          : '';
 
-        return pw.TableRow(
-          children: [
-            _cell(earningKey),
-            _cell(earningValue),
-            _cell(deductionKey),
-            _cell(deductionValue),
-          ],
-        );
-      },
-    ),
-  ],
-),
+                      return pw.TableRow(
+                        children: [
+                          _cell(earningKey),
+                          _cell(earningValue),
+                          _cell(deductionKey),
+                          _cell(deductionValue),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
 
               pw.SizedBox(height: 12),
 
@@ -331,7 +381,6 @@ pw.Table(
                 child: pw.Text(
                   "Net Salary: Rs ${deductions['NetSalary'] ?? '-'}",
                   style: pw.TextStyle(
-                    
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
                   ),
@@ -397,70 +446,69 @@ pw.Table(
   }
 
   Widget _monthYearDropdowns() {
-  DateTime now = DateTime.now();
-  int currentYear = now.year;
-  int currentMonth = now.month; // current month (1–12)
+    DateTime now = DateTime.now();
+    int currentYear = now.year;
+    int currentMonth = now.month; // current month (1–12)
 
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      DropdownButton<String>(
-        value: selectedMonth,
-        dropdownColor: Colors.black,
-        items: _months.asMap().entries.map((entry) {
-          int monthIndex = entry.key + 1; // 1-based index
-          String month = entry.value;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        DropdownButton<String>(
+          value: selectedMonth,
+          dropdownColor: Colors.black,
+          items: _months.asMap().entries.map((entry) {
+            int monthIndex = entry.key + 1; // 1-based index
+            String month = entry.value;
 
-          bool isEnabled = true;
+            bool isEnabled = true;
 
-          if (selectedYear == currentYear.toString()) {
-            // Only allow months <= previous month
-            isEnabled = monthIndex < currentMonth;
-          } else if (int.parse(selectedYear) > currentYear) {
-            // Future year → disable all
-            isEnabled = false;
-          }
-          // Past year → always enabled
+            if (selectedYear == currentYear.toString()) {
+              // Only allow months <= previous month
+              isEnabled = monthIndex < currentMonth;
+            } else if (int.parse(selectedYear) > currentYear) {
+              // Future year → disable all
+              isEnabled = false;
+            }
+            // Past year → always enabled
 
-          return DropdownMenuItem(
-            value: month,
-            enabled: isEnabled, // 👈 disable future months
-            child: Text(
-              month,
-              style: TextStyle(
-                color: isEnabled ? Colors.white : Colors.grey, // blur effect
+            return DropdownMenuItem(
+              value: month,
+              enabled: isEnabled, // 👈 disable future months
+              child: Text(
+                month,
+                style: TextStyle(
+                  color: isEnabled ? Colors.white : Colors.grey, // blur effect
+                ),
               ),
-            ),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() => selectedMonth = value);
-            _fetchPayslipDetails();
-          }
-        },
-      ),
-      const SizedBox(width: 20),
-      DropdownButton<String>(
-        value: selectedYear,
-        dropdownColor: Colors.black,
-        items: _years.map((year) {
-          return DropdownMenuItem(
-            value: year,
-            child: Text(year, style: const TextStyle(color: Colors.white)),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() => selectedYear = value);
-            _fetchPayslipDetails();
-          }
-        },
-      ),
-    ],
-  );
-}
-
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => selectedMonth = value);
+              _fetchPayslipDetails();
+            }
+          },
+        ),
+        const SizedBox(width: 20),
+        DropdownButton<String>(
+          value: selectedYear,
+          dropdownColor: Colors.black,
+          items: _years.map((year) {
+            return DropdownMenuItem(
+              value: year,
+              child: Text(year, style: const TextStyle(color: Colors.white)),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => selectedYear = value);
+              _fetchPayslipDetails();
+            }
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _payslipHeader() {
     return Center(
@@ -498,7 +546,7 @@ pw.Table(
             'Employee ID',
             employeeData['employee_id'] ?? '',
           ),
-          
+
           const Divider(),
           _infoRow(
             'Date of Joining',
@@ -732,10 +780,7 @@ pw.Table(
 // PDF helper methods
 pw.TableRow _detailRow(String k1, String? v1, String k2, String? v2) {
   return pw.TableRow(
-    children: [
-      _cell('$k1: ${v1 ?? ''}'),
-      _cell('$k2: ${v2 ?? ''}'),
-    ],
+    children: [_cell('$k1: ${v1 ?? ''}'), _cell('$k2: ${v2 ?? ''}')],
   );
 }
 

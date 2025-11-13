@@ -24,7 +24,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
-  final DateFormat dateFormatter = DateFormat('dd-MM-yyyy'); // ✅ dd/MM/yyyy format
+  final DateFormat dateFormatter = DateFormat(
+    'dd-MM-yyyy',
+  ); // ✅ dd/MM/yyyy format
 
   String? employeeName;
   String? position;
@@ -42,17 +44,16 @@ class _ApplyLeaveState extends State<ApplyLeave> {
 
     // Pre-fill when editing
     if (widget.existingLeave != null) {
-  selectedLeaveType = widget.existingLeave!['leaveType'];
-  reasonController.text = widget.existingLeave!['reason'] ?? '';
+      selectedLeaveType = widget.existingLeave!['leaveType'];
+      reasonController.text = widget.existingLeave!['reason'] ?? '';
 
-  // Parse DD-MM-YYYY → DateTime
-  String fromStr = widget.existingLeave!['fromDate'];
-  String toStr = widget.existingLeave!['toDate'];
+      // Parse DD-MM-YYYY → DateTime
+      String fromStr = widget.existingLeave!['fromDate'];
+      String toStr = widget.existingLeave!['toDate'];
 
-  fromDate = DateFormat("dd-MM-yyyy").parse(fromStr);
-  toDate = DateFormat("dd-MM-yyyy").parse(toStr);
-}
-
+      fromDate = DateFormat("dd-MM-yyyy").parse(fromStr);
+      toDate = DateFormat("dd-MM-yyyy").parse(toStr);
+    }
 
     // ✅ Update controllers initially
     fromDateController.text = dateFormatter.format(fromDate);
@@ -62,7 +63,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
   Future<void> fetchEmployeeName(String employeeId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/get-employee-name/$employeeId'),
+        Uri.parse(
+          'https://sabari2602.onrender.com/get-employee-name/$employeeId',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -110,8 +113,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please fill in all fields.'),
-            backgroundColor: Colors.red),
+          content: Text('Please fill in all fields.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -120,8 +124,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
     if (fromDate.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('From Date cannot be earlier than today.'),
-            backgroundColor: Colors.red),
+          content: Text('From Date cannot be earlier than today.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -129,8 +134,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
     if (toDate.isBefore(fromDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('To Date cannot be earlier than From Date.'),
-            backgroundColor: Colors.red),
+          content: Text('To Date cannot be earlier than From Date.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -150,37 +156,46 @@ class _ApplyLeaveState extends State<ApplyLeave> {
     final isEditing = widget.existingLeave != null;
     final leaveId = widget.existingLeave?['_id'];
     final url = isEditing
-        ? 'http://localhost:5000/apply/update/$employeeId/$leaveId'
-        : 'http://localhost:5000/apply/apply-leave';
+        ? 'https://sabari2602.onrender.com/apply/update/$employeeId/$leaveId'
+        : 'https://sabari2602.onrender.com/apply/apply-leave';
 
     final response = await (isEditing
-        ? http.put(Uri.parse(url),
+        ? http.put(
+            Uri.parse(url),
             headers: {"Content-Type": "application/json"},
-            body: jsonEncode(leaveData))
-        : http.post(Uri.parse(url),
+            body: jsonEncode(leaveData),
+          )
+        : http.post(
+            Uri.parse(url),
             headers: {"Content-Type": "application/json"},
-            body: jsonEncode(leaveData)));
+            body: jsonEncode(leaveData),
+          ));
 
     if (!mounted) return;
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isEditing
-              ? '✅ Leave updated successfully!'
-              : '✅ Leave applied successfully!'),
+          content: Text(
+            isEditing
+                ? '✅ Leave updated successfully!'
+                : '✅ Leave applied successfully!',
+          ),
           backgroundColor: Colors.green,
         ),
       );
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const LeaveManagement()));
+        context,
+        MaterialPageRoute(builder: (_) => const LeaveManagement()),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('❌ Error: ${response.body}'),
-            backgroundColor: Colors.red),
+          content: Text('❌ Error: ${response.body}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -199,9 +214,10 @@ class _ApplyLeaveState extends State<ApplyLeave> {
             Text(
               isEditing ? 'EDIT LEAVE' : 'APPLY LEAVE',
               style: const TextStyle(
-                  fontSize: 22,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold),
+                fontSize: 22,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (employeeName != null) ...[
               const SizedBox(height: 10),
@@ -213,10 +229,9 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                 const SizedBox(height: 5),
                 Text(
                   'Position: $position',
-                  style:
-                      const TextStyle(fontSize: 16, color: Colors.white70),
+                  style: const TextStyle(fontSize: 16, color: Colors.white70),
                 ),
-              ]
+              ],
             ],
             const SizedBox(height: 30),
             Row(
@@ -225,15 +240,21 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Leave Type',
-                          style: TextStyle(color: Colors.white)),
+                      const Text(
+                        'Leave Type',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       const SizedBox(height: 5),
                       DropdownButtonFormField<String>(
                         dropdownColor: Colors.white,
                         value: selectedLeaveType,
                         items: ['Sick', 'Casual', 'Sad']
-                            .map((type) =>
-                                DropdownMenuItem(value: type, child: Text(type)))
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) =>
                             setState(() => selectedLeaveType = value),
@@ -241,7 +262,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
@@ -260,8 +282,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(8))),
+                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                          ),
                           hintText: 'Hari Bhaskar',
                         ),
                       ),
@@ -277,8 +299,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('From',
-                          style: TextStyle(color: Colors.white)),
+                      const Text('From', style: TextStyle(color: Colors.white)),
                       const SizedBox(height: 5),
                       TextField(
                         readOnly: true,
@@ -289,7 +310,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
@@ -300,8 +322,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('To',
-                          style: TextStyle(color: Colors.white)),
+                      const Text('To', style: TextStyle(color: Colors.white)),
                       const SizedBox(height: 5),
                       TextField(
                         readOnly: true,
@@ -312,7 +333,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
@@ -324,8 +346,10 @@ class _ApplyLeaveState extends State<ApplyLeave> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Reason for Leave',
-                    style: TextStyle(color: Colors.white)),
+                const Text(
+                  'Reason for Leave',
+                  style: TextStyle(color: Colors.white),
+                ),
                 const SizedBox(height: 5),
                 TextField(
                   controller: reasonController,
@@ -334,7 +358,8 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
@@ -346,8 +371,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        const Color.fromARGB(255, 240, 239, 243),
+                    backgroundColor: const Color.fromARGB(255, 240, 239, 243),
                   ),
                   child: const Text('Cancel'),
                 ),
@@ -355,8 +379,7 @@ class _ApplyLeaveState extends State<ApplyLeave> {
                 ElevatedButton(
                   onPressed: _submitLeave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        const Color.fromARGB(255, 240, 239, 243),
+                    backgroundColor: const Color.fromARGB(255, 240, 239, 243),
                   ),
                   child: Text(isEditing ? 'Update' : 'Apply'),
                 ),

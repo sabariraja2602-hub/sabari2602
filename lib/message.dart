@@ -5,12 +5,10 @@ import 'sidebar.dart';
 import 'package:provider/provider.dart';
 import 'user_provider.dart'; // 🔹 import your provider
 
-
 class MsgPage extends StatefulWidget {
   final String employeeId;
-  
 
-  const MsgPage({super.key, required this.employeeId,});
+  const MsgPage({super.key, required this.employeeId});
 
   @override
   State<MsgPage> createState() => _MsgPageState();
@@ -30,7 +28,9 @@ class _MsgPageState extends State<MsgPage> {
   Future<void> fetchEmployeeDetails() async {
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:5000/api/employees/${widget.employeeId}"),
+        Uri.parse(
+          "https://sabari2602.onrender.com/api/employees/${widget.employeeId}",
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -47,7 +47,7 @@ class _MsgPageState extends State<MsgPage> {
       debugPrint("❌ Error fetching employee: $e");
     }
   }
-/*
+  /*
   void sendMessage() {
     if (_msgController.text.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -61,13 +61,15 @@ class _MsgPageState extends State<MsgPage> {
   }
 */
 
-// 🔴 sendMessage function updated to POST notification
+  // 🔴 sendMessage function updated to POST notification
   Future<void> sendMessage() async {
     // 🔹 Fetch sender info from UserProvider
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final senderId = userProvider.employeeId;
     final senderName = userProvider.employeeName;
-    if (_msgController.text.isNotEmpty && employeeData != null && senderId != null &&
+    if (_msgController.text.isNotEmpty &&
+        employeeData != null &&
+        senderId != null &&
         senderName != null) {
       try {
         // 🔴 current month get pannurathu
@@ -83,20 +85,21 @@ class _MsgPageState extends State<MsgPage> {
           "September",
           "October",
           "November",
-          "December"
+          "December",
         ][DateTime.now().month - 1];
 
         // 🔴 API ku POST panna
         final response = await http.post(
-          Uri.parse("http://localhost:5000/notifications"),
+          Uri.parse("https://sabari2602.onrender.com/notifications"),
           headers: {"Content-Type": "application/json"},
           body: json.encode({
             "month": month,
             "category": "sms", // 🔴 temporary fixed category
             "message": _msgController.text,
             "empId": widget.employeeId, // 🔴 target employee ID
-            "senderName":senderName,   // 🔹 sender Name  // 👈 extra field
-            "senderId": senderId,       // 🔹 sender ID (logged-in user)                 // 👈 extra field
+            "senderName": senderName, // 🔹 sender Name  // 👈 extra field
+            "senderId":
+                senderId, // 🔹 sender ID (logged-in user)                 // 👈 extra field
             //  "senderRole": employeeData?['position'],       // 👈 extra field
           }),
         );
@@ -104,8 +107,7 @@ class _MsgPageState extends State<MsgPage> {
         if (response.statusCode == 201) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text("Message sent to ${employeeData?['employeeName']}"),
+              content: Text("Message sent to ${employeeData?['employeeName']}"),
               backgroundColor: Colors.green,
             ),
           );
@@ -145,12 +147,14 @@ class _MsgPageState extends State<MsgPage> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey[300],
-                    backgroundImage: (employeeData?['employeeImage'] != null &&
+                    backgroundImage:
+                        (employeeData?['employeeImage'] != null &&
                             employeeData!['employeeImage'].isNotEmpty)
                         ? NetworkImage(
-                            "http://localhost:5000/uploads/${employeeData!['employeeImage']}")
+                            "https://sabari2602.onrender.com/uploads/${employeeData!['employeeImage']}",
+                          )
                         : const AssetImage("assets/profile.png")
-                            as ImageProvider,
+                              as ImageProvider,
                   ),
                   const SizedBox(height: 12),
 
@@ -158,14 +162,14 @@ class _MsgPageState extends State<MsgPage> {
                   Text(
                     employeeData?['employeeName'] ?? "Unknown",
                     style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   Text(
                     employeeData?['position'] ?? "",
-                    style: const TextStyle(
-                        fontSize: 16, color: Colors.black54),
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 25),
 
@@ -197,7 +201,9 @@ class _MsgPageState extends State<MsgPage> {
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -215,7 +221,9 @@ class _MsgPageState extends State<MsgPage> {
                           backgroundColor: Colors.grey[400],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),

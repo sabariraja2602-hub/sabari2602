@@ -45,7 +45,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
 
   void _setupCallManager() {
     _callManager = CallManager(
-      serverUrl: 'http://localhost:5000',
+      serverUrl: 'https://sabari2602.onrender.com',
       currentUserId: widget.currentUserId,
     );
 
@@ -128,9 +128,9 @@ class _AudioCallPageState extends State<AudioCallPage> {
       await Helper.setSpeakerphoneOn(!_isSpeakerOn);
       setState(() => _isSpeakerOn = !_isSpeakerOn);
 
-      debugPrint(_isSpeakerOn
-          ? '🔊 Speaker turned ON'
-          : '🔈 Speaker turned OFF');
+      debugPrint(
+        _isSpeakerOn ? '🔊 Speaker turned ON' : '🔈 Speaker turned OFF',
+      );
     } catch (e) {
       debugPrint("⚠ Speaker toggle error: $e");
     }
@@ -195,10 +195,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.deepPurple,
-      ),
+      appBar: AppBar(title: Text(title), backgroundColor: Colors.deepPurple),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -215,8 +212,8 @@ class _AudioCallPageState extends State<AudioCallPage> {
                             child: RTCVideoView(
                               _remoteRenderer,
                               mirror: false,
-                              objectFit:
-                                  RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                              objectFit: RTCVideoViewObjectFit
+                                  .RTCVideoViewObjectFitCover,
                             ),
                           ),
                         ),
@@ -234,8 +231,8 @@ class _AudioCallPageState extends State<AudioCallPage> {
                             child: RTCVideoView(
                               _localRenderer,
                               mirror: true,
-                              objectFit:
-                                  RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                              objectFit: RTCVideoViewObjectFit
+                                  .RTCVideoViewObjectFitCover,
                             ),
                           ),
                         ),
@@ -259,8 +256,8 @@ class _AudioCallPageState extends State<AudioCallPage> {
                 widget.isCaller
                     ? 'Calling ${widget.targetUserId}...'
                     : _connected
-                        ? 'Connected'
-                        : 'Connecting...',
+                    ? 'Connected'
+                    : 'Connecting...',
                 style: const TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
@@ -292,8 +289,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
 
                   // 🔊 Speaker on/off
                   CircleAvatar(
-                    backgroundColor:
-                        _isSpeakerOn ? Colors.green : Colors.grey,
+                    backgroundColor: _isSpeakerOn ? Colors.green : Colors.grey,
                     radius: 28,
                     child: IconButton(
                       icon: Icon(
@@ -323,9 +319,12 @@ class _AudioCallPageState extends State<AudioCallPage> {
                     child: IconButton(
                       icon: const Icon(Icons.call_end, color: Colors.white),
                       onPressed: () {
-                        _callManager.endCall(forceTargetId: widget.targetUserId);
-                        Navigator.of(context)
-                            .popUntil((route) => route.isFirst);
+                        _callManager.endCall(
+                          forceTargetId: widget.targetUserId,
+                        );
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
                       },
                     ),
                   ),

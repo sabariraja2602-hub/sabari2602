@@ -81,14 +81,18 @@ class _EmpPayrollState extends State<EmpPayroll> {
   ];
 
   Future<void> _downloadAllCheckedPayslips() async {
-    final employeeId =
-        Provider.of<UserProvider>(context, listen: false).employeeId;
+    final employeeId = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).employeeId;
 
     if (employeeId == null ||
         selectedYear == null ||
         !checkedList.contains(true)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select year and at least one month')),
+        const SnackBar(
+          content: Text('Please select year and at least one month'),
+        ),
       );
       return;
     }
@@ -102,7 +106,7 @@ class _EmpPayrollState extends State<EmpPayroll> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/get-multiple-payslips'),
+        Uri.parse('https://sabari2602.onrender.com/get-multiple-payslips'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'year': selectedYear,
@@ -123,9 +127,11 @@ class _EmpPayrollState extends State<EmpPayroll> {
         for (final monthKey in selectedMonths) {
           final monthIndex = monthKeys.indexOf(monthKey);
           final earnings = Map<String, dynamic>.from(
-              data['months'][monthKey]['earnings']);
+            data['months'][monthKey]['earnings'],
+          );
           final deductions = Map<String, dynamic>.from(
-              data['months'][monthKey]['deductions']);
+            data['months'][monthKey]['deductions'],
+          );
 
           pdf.addPage(
             pw.Page(
@@ -144,20 +150,27 @@ class _EmpPayrollState extends State<EmpPayroll> {
                         pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.end,
                           children: [
-                            pw.Text("ZeAI Soft",
-                                style: pw.TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: pw.FontWeight.bold)),
                             pw.Text(
-                                "3rd Floor,SKCL Tech Square,Lazer St,South Phase",
-                                style: pw.TextStyle(fontSize: 10)),
+                              "ZeAI Soft",
+                              style: pw.TextStyle(
+                                fontSize: 14,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
                             pw.Text(
-                                "SIDCO Industrial Estate, Guindy, Chennai 600032",
-                                style: pw.TextStyle(fontSize: 10)),
-                            pw.Text("info@zeaisoft.com | +91 97876 36374",
-                                style: pw.TextStyle(fontSize: 10)),
+                              "3rd Floor,SKCL Tech Square,Lazer St,South Phase",
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                            pw.Text(
+                              "SIDCO Industrial Estate, Guindy, Chennai 600032",
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                            pw.Text(
+                              "info@zeaisoft.com | +91 97876 36374",
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                     pw.Divider(thickness: 1),
@@ -168,34 +181,64 @@ class _EmpPayrollState extends State<EmpPayroll> {
                       child: pw.Text(
                         'Payslip for ${months[monthIndex]} $selectedYear',
                         style: pw.TextStyle(
-                            fontSize: 14, fontWeight: pw.FontWeight.bold),
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                     ),
                     pw.SizedBox(height: 10),
 
                     // Employee Details
-                    pw.Text('Employee Details',
-                        style: pw.TextStyle(
-                            fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                    pw.Text(
+                      'Employee Details',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
                     pw.SizedBox(height: 5),
                     pw.Table(
                       border: pw.TableBorder.all(
-                          width: 0.5, color: PdfColors.grey),
+                        width: 0.5,
+                        color: PdfColors.grey,
+                      ),
                       children: [
-                        _detailRow('Employee Name', employee['employee_name'],
-                            'Employee ID', employee['employee_id']),
-                        _detailRow('Date of Joining',
-                            employee['date_of_joining'], 'Bank Name',
-                            employee['bank_name']),
-                        _detailRow('Designation', employee['designation'],
-                            'Account No', employee['account_no']),
-                        _detailRow('Location', employee['location'], 'UAN',
-                            employee['uan']),
-                        _detailRow('No.Of Days Worked',
-                            employee['no_of_workdays'], 'ESIC No',
-                            employee['esic_no']),
-                        _detailRow('PAN', employee['pan'], 'LOP',
-                            employee['lop']),
+                        _detailRow(
+                          'Employee Name',
+                          employee['employee_name'],
+                          'Employee ID',
+                          employee['employee_id'],
+                        ),
+                        _detailRow(
+                          'Date of Joining',
+                          employee['date_of_joining'],
+                          'Bank Name',
+                          employee['bank_name'],
+                        ),
+                        _detailRow(
+                          'Designation',
+                          employee['designation'],
+                          'Account No',
+                          employee['account_no'],
+                        ),
+                        _detailRow(
+                          'Location',
+                          employee['location'],
+                          'UAN',
+                          employee['uan'],
+                        ),
+                        _detailRow(
+                          'No.Of Days Worked',
+                          employee['no_of_workdays'],
+                          'ESIC No',
+                          employee['esic_no'],
+                        ),
+                        _detailRow(
+                          'PAN',
+                          employee['pan'],
+                          'LOP',
+                          employee['lop'],
+                        ),
                       ],
                     ),
                     pw.SizedBox(height: 12),
@@ -203,11 +246,14 @@ class _EmpPayrollState extends State<EmpPayroll> {
                     // Earnings + Deductions Table
                     pw.Table(
                       border: pw.TableBorder.all(
-                          width: 0.5, color: PdfColors.grey),
+                        width: 0.5,
+                        color: PdfColors.grey,
+                      ),
                       children: [
                         pw.TableRow(
                           decoration: pw.BoxDecoration(
-                              color: PdfColor.fromHex('#9F71F8')),
+                            color: PdfColor.fromHex('#9F71F8'),
+                          ),
                           children: [
                             _cell('Earning'),
                             _cell('Amount (Rs)'),
@@ -231,10 +277,8 @@ class _EmpPayrollState extends State<EmpPayroll> {
                                 : '';
                             final deductionValue =
                                 index < deductions.values.length
-                                    ? deductions.values
-                                        .elementAt(index)
-                                        .toString()
-                                    : '';
+                                ? deductions.values.elementAt(index).toString()
+                                : '';
 
                             return pw.TableRow(
                               children: [
@@ -257,7 +301,9 @@ class _EmpPayrollState extends State<EmpPayroll> {
                       child: pw.Text(
                         "Net Salary: Rs ${deductions['NetSalary'] ?? '-'}",
                         style: pw.TextStyle(
-                            fontSize: 14, fontWeight: pw.FontWeight.bold),
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -271,15 +317,15 @@ class _EmpPayrollState extends State<EmpPayroll> {
           onLayout: (PdfPageFormat format) async => pdf.save(),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.body}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${response.body}')));
       }
     } catch (e) {
       print('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Exception: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Exception: $e')));
     }
   }
 
@@ -292,9 +338,7 @@ class _EmpPayrollState extends State<EmpPayroll> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween),
             ),
             const SizedBox(height: 10),
 
@@ -332,13 +376,13 @@ class _EmpPayrollState extends State<EmpPayroll> {
                       style: TextStyle(color: Colors.white),
                     ),
                     dropdownColor: const Color(0xFF2C314A),
-                    icon:
-                        const Icon(Icons.arrow_drop_down, color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white,
+                    ),
                     style: const TextStyle(color: Colors.white),
                     items: [
-                      for (int year = 2020;
-                          year <= DateTime.now().year;
-                          year++)
+                      for (int year = 2020; year <= DateTime.now().year; year++)
                         DropdownMenuItem(
                           value: year.toString(),
                           child: Text(
@@ -436,22 +480,20 @@ class _EmpPayrollState extends State<EmpPayroll> {
                                   onChanged: (bool? value) {
                                     if (selectedYear == null) return;
                                     setState(() {
-                                      int currentYear =
-                                          DateTime.now().year;
-                                      int currentMonth =
-                                          DateTime.now().month;
-                                      int selected =
-                                          int.parse(selectedYear!);
+                                      int currentYear = DateTime.now().year;
+                                      int currentMonth = DateTime.now().month;
+                                      int selected = int.parse(selectedYear!);
 
-                                      for (int i = 0;
-                                          i < checkedList.length;
-                                          i++) {
+                                      for (
+                                        int i = 0;
+                                        i < checkedList.length;
+                                        i++
+                                      ) {
                                         bool isDisabled = false;
 
                                         if (selected > currentYear) {
                                           isDisabled = true;
-                                        } else if (selected ==
-                                                currentYear &&
+                                        } else if (selected == currentYear &&
                                             i + 1 >= currentMonth) {
                                           isDisabled = true;
                                         }
@@ -466,7 +508,8 @@ class _EmpPayrollState extends State<EmpPayroll> {
                                   },
                                   checkColor: Colors.black,
                                   fillColor: WidgetStateProperty.all<Color>(
-                                      Colors.white),
+                                    Colors.white,
+                                  ),
                                 ),
                               ],
                             ),
@@ -527,9 +570,9 @@ class _EmpPayrollState extends State<EmpPayroll> {
                                               });
                                             },
                                       checkColor: Colors.black,
-                                      fillColor:
-                                          WidgetStateProperty.all<Color>(
-                                              Colors.white),
+                                      fillColor: WidgetStateProperty.all<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -553,10 +596,7 @@ class _EmpPayrollState extends State<EmpPayroll> {
 // PDF helper methods
 pw.TableRow _detailRow(String k1, String? v1, String k2, String? v2) {
   return pw.TableRow(
-    children: [
-      _cell('$k1: ${v1 ?? ''}'),
-      _cell('$k2: ${v2 ?? ''}'),
-    ],
+    children: [_cell('$k1: ${v1 ?? ''}'), _cell('$k2: ${v2 ?? ''}')],
   );
 }
 

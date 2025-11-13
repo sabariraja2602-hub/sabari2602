@@ -33,39 +33,40 @@ class _LeaveManagementState extends State<LeaveManagement> {
   }
 
   Future<List<Map<String, dynamic>>> fetchLeaves() async {
-  if (employeeId == null) {
-    throw Exception("Employee ID not found");
+    if (employeeId == null) {
+      throw Exception("Employee ID not found");
+    }
+
+    final String fetchUrl =
+        'https://sabari2602.onrender.com/apply/fetch/$employeeId';
+    print("👉 Fetching leaves from: $fetchUrl");
+
+    final response = await http.get(Uri.parse(fetchUrl));
+
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+
+      // ✅ If backend wraps response in { items: [...] }
+      final List<dynamic> data = decoded is List
+          ? decoded
+          : (decoded['items'] ?? []);
+
+      final leaves = data.cast<Map<String, dynamic>>();
+
+      // ✅ Filter out cancelled
+      return leaves
+          .where((leave) => leave['status']?.toLowerCase() != 'cancelled')
+          .toList();
+    } else {
+      throw Exception('Failed to load leave data');
+    }
   }
-
-  final String fetchUrl = 'http://localhost:5000/apply/fetch/$employeeId';
-  print("👉 Fetching leaves from: $fetchUrl");
-
-  final response = await http.get(Uri.parse(fetchUrl));
-
-  if (response.statusCode == 200) {
-    final decoded = json.decode(response.body);
-
-    // ✅ If backend wraps response in { items: [...] }
-    final List<dynamic> data =
-        decoded is List ? decoded : (decoded['items'] ?? []);
-
-    final leaves = data.cast<Map<String, dynamic>>();
-
-    // ✅ Filter out cancelled
-    return leaves
-        .where((leave) => leave['status']?.toLowerCase() != 'cancelled')
-        .toList();
-  } else {
-    throw Exception('Failed to load leave data');
-  }
-}
-
 
   Future<void> _cancelLeave(String leaveId) async {
     if (employeeId == null) return;
 
     final String deleteUrl =
-        'http://localhost:5000/apply/delete/$employeeId/$leaveId';
+        'https://sabari2602.onrender.com/apply/delete/$employeeId/$leaveId';
     print('🔗 Deleting leave via: $deleteUrl');
 
     final response = await http.delete(Uri.parse(deleteUrl));

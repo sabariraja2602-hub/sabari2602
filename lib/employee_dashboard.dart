@@ -47,12 +47,17 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
 
   /// 🔹 Fetch employee name from backend
   Future<void> fetchEmployeeName() async {
-    final employeeId = Provider.of<UserProvider>(context, listen: false).employeeId;
+    final employeeId = Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).employeeId;
     if (employeeId == null) return;
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:5000/get-employee-name/$employeeId'),
+        Uri.parse(
+          'https://sabari2602.onrender.com/get-employee-name/$employeeId',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -71,7 +76,10 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   /// 🔹 Fetch leave balances
   Future<void> _fetchLeaveBalance() async {
     try {
-      final employeeId = Provider.of<UserProvider>(context, listen: false).employeeId?.trim();
+      final employeeId = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).employeeId?.trim();
       if (employeeId == null || employeeId.isEmpty) {
         setState(() {
           _error = "Employee ID not found";
@@ -81,7 +89,8 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       }
 
       final year = DateTime.now().year;
-      final url = "http://localhost:5000/apply/leave-balance/$employeeId?year=$year";
+      final url =
+          "https://sabari2602.onrender.com/apply/leave-balance/$employeeId?year=$year";
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
@@ -127,7 +136,11 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               padding: const EdgeInsets.all(20),
               child: Text(
                 'Welcome, ${employeeName ?? user.employeeName ?? '...'}!',
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
             if (user.position != null)
@@ -159,18 +172,28 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         alignment: WrapAlignment.center,
         children: [
           _quickActionButton('Apply Leave', () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyLeave()))
-                .then((_) => _fetchLeaveBalance());
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ApplyLeave()),
+            ).then((_) => _fetchLeaveBalance());
           }),
           _quickActionButton('Download Payslip', () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const EmpPayroll()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EmpPayroll()),
+            );
           }),
           _quickActionButton('Mark Attendance', () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceLoginPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AttendanceLoginPage()),
+            );
           }),
           _quickActionButton('Notifications Preview', () {
-            final empId =
-                Provider.of<UserProvider>(context, listen: false).employeeId;
+            final empId = Provider.of<UserProvider>(
+              context,
+              listen: false,
+            ).employeeId;
             if (empId != null) {
               Navigator.push(
                 context,
@@ -185,7 +208,10 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             }
           }),
           _quickActionButton('Company Events', () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const CompanyEventsScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CompanyEventsScreen()),
+            );
           }),
         ],
       ),
@@ -211,7 +237,8 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
 
   Widget _buildCardLayout(BuildContext context) {
     final currentDate = DateTime.now();
-    final formattedDate = '${currentDate.day}/${currentDate.month}/${currentDate.year}';
+    final formattedDate =
+        '${currentDate.day}/${currentDate.month}/${currentDate.year}';
     final currentTime = TimeOfDay.now().format(context);
 
     return Padding(
@@ -228,7 +255,10 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               subtitle: 'Today: $formattedDate',
               buttonLabel: 'To Do List',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ToDoPlanner()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ToDoPlanner()),
+                );
               },
             ),
             _leaveCardTile(
@@ -237,12 +267,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               subtitle: _isLoading
                   ? 'Loading...'
                   : _error != null
-                      ? 'Error'
-                      : 'Used: $casualUsed/$casualTotal\nRemaining: ${casualTotal - casualUsed}',
+                  ? 'Error'
+                  : 'Used: $casualUsed/$casualTotal\nRemaining: ${casualTotal - casualUsed}',
               buttonLabel: 'View',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyLeave()))
-                    .then((_) => _fetchLeaveBalance());
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                ).then((_) => _fetchLeaveBalance());
               },
             ),
             _leaveCardTile(
@@ -251,12 +283,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               subtitle: _isLoading
                   ? 'Loading...'
                   : _error != null
-                      ? 'Error'
-                      : 'Used: $sickUsed/$sickTotal\nRemaining: ${sickTotal - sickUsed}',
+                  ? 'Error'
+                  : 'Used: $sickUsed/$sickTotal\nRemaining: ${sickTotal - sickUsed}',
               buttonLabel: 'View',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyLeave()))
-                    .then((_) => _fetchLeaveBalance());
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                ).then((_) => _fetchLeaveBalance());
               },
             ),
             _leaveCardTile(
@@ -265,12 +299,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               subtitle: _isLoading
                   ? 'Loading...'
                   : _error != null
-                      ? 'Error'
-                      : 'Used: $sadUsed/$sadTotal\nRemaining: ${sadTotal - sadUsed}',
+                  ? 'Error'
+                  : 'Used: $sadUsed/$sadTotal\nRemaining: ${sadTotal - sadUsed}',
               buttonLabel: 'View',
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyLeave()))
-                    .then((_) => _fetchLeaveBalance());
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ApplyLeave()),
+                ).then((_) => _fetchLeaveBalance());
               },
             ),
           ],
@@ -319,7 +355,11 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -334,7 +374,9 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(buttonLabel),
           ),
