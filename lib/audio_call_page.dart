@@ -4,9 +4,6 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'call_manager.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'dart:html'
-    as html
-    show AudioElement, document; // Only for web audio fix
 
 class AudioCallPage extends StatefulWidget {
   final String currentUserId;
@@ -37,9 +34,6 @@ class _AudioCallPageState extends State<AudioCallPage> {
   bool _isMuted = false;
   bool _isSpeakerOn = false;
 
-  // ✅ Added for improved web audio handling
-  html.AudioElement? _webAudioElement;
-
   @override
   void initState() {
     super.initState();
@@ -53,10 +47,7 @@ class _AudioCallPageState extends State<AudioCallPage> {
   }
 
   void _setupCallManager() {
-    _callManager = CallManager(
-      serverUrl: 'https://sabari2602.onrender.com',
-      currentUserId: widget.currentUserId,
-    );
+    _callManager = CallManager();
 
     // 🎧 Local preview
     _callManager.onLocalStream = (MediaStream? stream) async {
@@ -85,32 +76,6 @@ class _AudioCallPageState extends State<AudioCallPage> {
         for (var track in stream.getAudioTracks()) {
           track.enabled = true;
         }
-
-        // 🌐 Web audio playback fix — reuse HTML AudioElement
-        if (kIsWeb) {
-          try {
-            if (_webAudioElement == null) {
-              _webAudioElement = html.AudioElement()
-                ..autoplay = true
-                ..controls = false;
-              html.document.body?.append(_webAudioElement!);
-            }
-
-            // Attach stream to audio element
-            // ignore: undefined_prefixed_name
-            _webAudioElement!.srcObject = stream as dynamic;
-            _webAudioElement!.muted = false;
-
-            // Some browsers require a user gesture; attempt play and ignore aborts
-            await _webAudioElement!.play().catchError((e) {
-              debugPrint('⚠ WebAudio play error: $e');
-            });
-
-            debugPrint('✅ remote audio play OK');
-          } catch (e) {
-            debugPrint('⚠ Remote audio playback error (web): $e');
-          }
-        }
       } catch (e) {
         debugPrint('⚠ Remote audio handling error: $e');
       }
@@ -127,16 +92,6 @@ class _AudioCallPageState extends State<AudioCallPage> {
   }
 
   Future<void> _startCall() async {
-    try {
-      await _callManager.init();
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("⚠ Permission error: $e")));
-      Navigator.pop(context);
-      return;
-    }
-
     if (widget.isCaller) {
       await _callManager.startCall(
         targetId: widget.targetUserId,
@@ -222,20 +177,8 @@ class _AudioCallPageState extends State<AudioCallPage> {
     _remoteRenderer.dispose();
     _localRenderer.dispose();
 
-    // ✅ Clean up web audio element
-    if (_webAudioElement != null) {
-      try {
-        _webAudioElement!.pause();
-        _webAudioElement!.remove();
-      } catch (e) {
-        debugPrint("⚠ Error removing web audio element: $e");
-      }
-      _webAudioElement = null;
-    }
-
     Future.microtask(() async {
       _callManager.endCall(forceTargetId: widget.targetUserId);
-      _callManager.dispose();
     });
 
     super.dispose();

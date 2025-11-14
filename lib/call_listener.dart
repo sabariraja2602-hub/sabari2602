@@ -24,10 +24,7 @@ class _CallListenerState extends State<CallListener> {
   void initState() {
     super.initState();
 
-    _callManager = CallManager(
-      serverUrl: 'https://sabari2602.onrender.com',
-      currentUserId: widget.currentUserId,
-    );
+    _callManager = CallManager();
 
     // 📞 Handle incoming call
     _callManager.onIncomingCall = (fromId, signal) {
@@ -44,7 +41,7 @@ class _CallListenerState extends State<CallListener> {
     };
 
     // ⚡ Initialize socket connection
-    _callManager.init();
+    _callManager.init(userId: widget.currentUserId);
 
     // ✅ Set up socket-level event listeners AFTER init
     _callManager.socket.on(
